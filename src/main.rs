@@ -1,5 +1,6 @@
 use std::env;
 use std::fs::read_to_string;
+use std::io;
 
 #[derive(Debug)]
 enum Opcode {
@@ -63,7 +64,10 @@ fn execute(code: Opcode, pointer: usize, program: &mut [i32]) -> usize {
         Opcode::Input => input(pointer, program),
         Opcode::Output(m0) => output(m0, pointer, program),
         Opcode::Halt => halt(pointer, program),
-        _ => pointer,
+        Opcode::Equals(m0, m1) => equals(m0, m1, pointer, program),
+        Opcode::JumpIfTrue(m0, m1) => jump_if_true(m0, m1, pointer, program),
+        Opcode::JumpIfFalse(m0, m1) => jump_if_false(m0, m1, pointer, program),
+        Opcode::LessThan(m0, m1) => less_than(m0, m1, pointer, program),
     }
 }
 
@@ -79,9 +83,44 @@ fn multiply(m0: bool, m1: bool, pointer: usize, program: &mut [i32]) -> usize {
     pointer + 4
 }
 
+fn jump_if_true(m0: bool, m1: bool, pointer: usize, program: &mut [i32]) -> usize {
+    if get_param(pointer + 1, m0, program) != 0 {
+        return get_param(pointer + 2, m1, program) as usize;
+    }
+    pointer + 3
+}
+
+fn jump_if_false(m0: bool, m1: bool, pointer: usize, program: &mut [i32]) -> usize {
+    if get_param(pointer + 1, m0, program) == 0 {
+        return get_param(pointer + 2, m1, program) as usize;
+    }
+    pointer + 3
+}
+
+fn less_than(m0: bool, m1: bool, pointer: usize, program: &mut [i32]) -> usize {
+    if get_param(pointer + 1, m0, program) < get_param(pointer + 2, m1, program) {
+        program[program[pointer + 3] as usize] = 1;
+    } else {
+        program[program[pointer + 3] as usize] = 0;
+    }
+    pointer + 4
+}
+
+fn equals(m0: bool, m1: bool, pointer: usize, program: &mut [i32]) -> usize {
+    if get_param(pointer + 1, m0, program) == get_param(pointer + 2, m1, program) {
+        program[program[pointer + 3] as usize] = 1;
+    } else {
+        program[program[pointer + 3] as usize] = 0;
+    }
+    pointer + 4
+}
+
 fn input(pointer: usize, program: &mut [i32]) -> usize {
-    let input = 1;
-    program[program[pointer + 1] as usize] = input;
+    println!("Input please, human: ");
+    let mut input = String::new();
+    io::stdin().read_line(&mut input).unwrap();
+    let n: i32 = input.trim().parse().unwrap();
+    program[program[pointer + 1] as usize] = n;
     pointer + 2
 }
 
@@ -95,15 +134,14 @@ fn output(m0: bool, pointer: usize, program: &mut [i32]) -> usize {
     pointer + 2
 }
 
-fn halt(pointer: usize, program: &mut [i32]) -> usize {
-    println!("Program: {}", program[0]);
+fn halt(pointer: usize, _program: &mut [i32]) -> usize {
     pointer
 }
 
 fn run(program: &mut [i32]) {
     let mut pointer = 0;
     let mut op: Opcode;
-    let mut new_pointer = 0;
+    let mut new_pointer;
 
     while {
         op = from_num(program[pointer]);
