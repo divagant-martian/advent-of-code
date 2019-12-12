@@ -16,34 +16,18 @@ enum Opcode {
 }
 
 fn from_num(num: i32) -> Opcode {
+    let aux = num.div_euclid(100);
+    let m0 = aux.rem_euclid(10) == 1;
+    let m1 = aux.div_euclid(10) == 1;
     match num.rem_euclid(100) {
-        1 => {
-            let aux = num.div_euclid(100);
-            Opcode::Add(aux.rem_euclid(10) == 1, aux.div_euclid(10) == 1)
-        }
-        2 => {
-            let aux = num.div_euclid(100);
-            Opcode::Multiply(aux.rem_euclid(10) == 1, aux.div_euclid(10) == 1)
-        }
+        1 => Opcode::Add(m0, m1),
+        2 => Opcode::Multiply(m0, m1),
         3 => Opcode::Input,
-        4 => Opcode::Output(num.div_euclid(100).rem_euclid(10) == 1),
-        5 => {
-            let aux = num.div_euclid(100);
-            Opcode::JumpIfTrue(aux.rem_euclid(10) == 1, aux.div_euclid(10) == 1)
-        }
-        6 => {
-            let aux = num.div_euclid(100);
-            Opcode::JumpIfFalse(aux.rem_euclid(10) == 1, aux.div_euclid(10) == 1)
-        }
-        7 => {
-            let aux = num.div_euclid(100);
-            Opcode::LessThan(aux.rem_euclid(10) == 1, aux.div_euclid(10) == 1)
-        }
-        8 => {
-            let aux = num.div_euclid(100);
-            Opcode::Equals(aux.rem_euclid(10) == 1, aux.div_euclid(10) == 1)
-        }
-
+        4 => Opcode::Output(m0),
+        5 => Opcode::JumpIfTrue(m0, m1),
+        6 => Opcode::JumpIfFalse(m0, m1),
+        7 => Opcode::LessThan(m0, m1),
+        8 => Opcode::Equals(m0, m1),
         99 => Opcode::Halt,
         _ => panic!("bad code from num {}", num),
     }
@@ -147,6 +131,8 @@ fn run(program: &mut [i32]) {
         op = from_num(program[pointer]);
         // println!("P:{:03} N:{:?} {:?}", pointer, program[pointer], op);
         new_pointer = execute(op, pointer, program);
+        // println!("program: {:?}\n\n", &program);
+
         new_pointer != pointer
     } {
         pointer = new_pointer;
