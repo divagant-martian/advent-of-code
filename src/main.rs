@@ -40,13 +40,19 @@ fn get_param(position: usize, inmediate_mode: bool, program: &[i32]) -> i32 {
     program[program[position] as usize]
 }
 
-/// Dispatchs the corresponding operation and returns the position increment
-fn execute(code: Opcode, pointer: usize, program: &mut [i32]) -> usize {
+/// Dispatchs the corresponding operation and returns the new pointer
+fn execute(
+    code: Opcode,
+    pointer: usize,
+    program: &mut [i32],
+    inv: &mut Vec<i32>,
+    outv: &mut Vec<i32>,
+) -> usize {
     match code {
         Opcode::Add(m0, m1) => add(m0, m1, pointer, program),
         Opcode::Multiply(m0, m1) => multiply(m0, m1, pointer, program),
-        Opcode::Input => input(pointer, program),
-        Opcode::Output(m0) => output(m0, pointer, program),
+        Opcode::Input => input(pointer, program, inv),
+        Opcode::Output(m0) => output(m0, pointer, program, outv),
         Opcode::Halt => halt(pointer, program),
         Opcode::Equals(m0, m1) => equals(m0, m1, pointer, program),
         Opcode::JumpIfTrue(m0, m1) => jump_if_true(m0, m1, pointer, program),
@@ -99,22 +105,26 @@ fn equals(m0: bool, m1: bool, pointer: usize, program: &mut [i32]) -> usize {
     pointer + 4
 }
 
-fn input(pointer: usize, program: &mut [i32]) -> usize {
-    println!("Input please, human: ");
-    let mut input = String::new();
-    io::stdin().read_line(&mut input).unwrap();
-    let n: i32 = input.trim().parse().unwrap();
+fn input(pointer: usize, program: &mut [i32], input: &mut Vec<i32>) -> usize {
+    let n: i32;
+    if let Some(x) = input.pop() {
+        n = x;
+    } else {
+        let mut inp = String::new();
+        println!("Input please, human: ");
+        io::stdin().read_line(&mut inp).unwrap();
+        n = inp.trim().parse().unwrap();
+    }
     program[program[pointer + 1] as usize] = n;
     pointer + 2
 }
 
-fn output(m0: bool, pointer: usize, program: &mut [i32]) -> usize {
+fn output(m0: bool, pointer: usize, program: &mut [i32], output: &mut Vec<i32>) -> usize {
     if m0 {
-        print!("[{}] ", program[pointer + 1]);
-        return pointer + 2;
+        output.push(program[pointer + 1]);
+    } else {
+        output.push(program[program[pointer + 1] as usize]);
     }
-    print!("[{}] ", program[program[pointer + 1] as usize]);
-    // println!("program til now: {:?}\n\n", &program[0..pointer]);
     pointer + 2
 }
 
@@ -122,17 +132,13 @@ fn halt(pointer: usize, _program: &mut [i32]) -> usize {
     pointer
 }
 
-fn run(program: &mut [i32]) {
+fn run(program: &mut [i32], input: &mut Vec<i32>, output: &mut Vec<i32>) {
     let mut pointer = 0;
     let mut op: Opcode;
     let mut new_pointer;
-
     while {
         op = from_num(program[pointer]);
-        // println!("P:{:03} N:{:?} {:?}", pointer, program[pointer], op);
-        new_pointer = execute(op, pointer, program);
-        // println!("program: {:?}\n\n", &program);
-
+        new_pointer = execute(op, pointer, program, input, output);
         new_pointer != pointer
     } {
         pointer = new_pointer;
@@ -141,12 +147,16 @@ fn run(program: &mut [i32]) {
 
 fn main() {
     let path: String = env::args().nth(1).expect("no data path provided");
-    let mut program = read_to_string(&path)
+    let program = read_to_string(&path)
         .expect("bad input")
         .trim()
-        .split(",")
+        .split(',')
         .map(|x| i32::from_str_radix(x, 10).unwrap())
         .collect::<Vec<i32>>();
-
-    run(&mut program);
+    let mut mem = program.clone();
+    let mut input = vec![];
+    input.push(1);
+    let mut output = vec![];
+    run(&mut mem, &mut input, &mut output);
+    println!("OUTPUT: {:?}", output);
 }
