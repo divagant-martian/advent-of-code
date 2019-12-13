@@ -1,6 +1,4 @@
-mod opcode;
-
-use opcode::*;
+use crate::opcode::*;
 use std::io;
 
 pub struct Program<'a> {
@@ -47,17 +45,17 @@ impl<'a> Program<'a> {
     }
 
     fn jump_if_true(&mut self, m0: bool, m1: bool) {
-        if self.get_param(1, m0) != 0 {
-            self.pointer = self.get_param(2, m1) as usize;
+        self.pointer = match self.get_param(1, m0) != 0 {
+            true => self.get_param(2, m1) as usize,
+            false => self.pointer + 3,
         }
-        self.pointer += 3;
     }
 
     fn jump_if_false(&mut self, m0: bool, m1: bool) {
-        if self.get_param(1, m0) == 0 {
-            self.pointer = self.get_param(2, m1) as usize;
+        self.pointer = match self.get_param(1, m0) == 0 {
+            true => self.get_param(2, m1) as usize,
+            false => self.pointer + 3,
         }
-        self.pointer += 3;
     }
 
     fn less_than(&mut self, m0: bool, m1: bool) {
@@ -82,7 +80,6 @@ impl<'a> Program<'a> {
                 inp.trim().parse().unwrap()
             }
         };
-
         let p = self.mem[self.pointer + 1] as usize;
         self.mem[p] = n;
         self.pointer += 2;
