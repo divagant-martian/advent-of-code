@@ -9,7 +9,6 @@ pub enum Opcode {
     Input,
     Output(bool),
     Halt,
-    Debug,
 }
 
 pub fn from_num(num: i32) -> Opcode {

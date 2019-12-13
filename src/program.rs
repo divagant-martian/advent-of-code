@@ -1,5 +1,7 @@
 use crate::opcode::*;
+use colored::*;
 use std::io;
+use std::io::Write;
 
 pub struct Program<'a> {
     mem: Vec<i32>,
@@ -29,7 +31,6 @@ impl<'a> Program<'a> {
             Opcode::JumpIfTrue(m0, m1) => self.jump_if_true(m0, m1),
             Opcode::JumpIfFalse(m0, m1) => self.jump_if_false(m0, m1),
             Opcode::LessThan(m0, m1) => self.less_than(m0, m1),
-            Opcode::Debug => self.debug(code),
         }
     }
 
@@ -76,9 +77,10 @@ impl<'a> Program<'a> {
             Some(x) => x,
             None => {
                 let mut inp = String::new();
-                println!("Input please, human: ");
+                print!("Input please, human: ");
+                io::stdout().flush().unwrap();
                 io::stdin().read_line(&mut inp).unwrap();
-                inp.trim().parse().unwrap()
+                inp.trim().parse().expect("bad numeric input")
             }
         };
         let p = self.mem[self.pointer + 1] as usize;
@@ -98,24 +100,43 @@ impl<'a> Program<'a> {
     fn halt(&mut self) {}
 
     fn debug(&self, last_code: Opcode) {
-        let mut inp = String::new();
-        let mut n: i32;
+        let dbg = "[Debug] ".green();
+        let mut c: char;
+        let mut inp: String;
         while {
-            println!(
-                "[Debug] Last op: {:?}\
-                 \n        [   0   ] continue\
-                 \n        [mem x y] view mem in range x..=y \
-                 \n        [   p   ] view pointer",
-                last_code
+            print!(
+                "{}lastop({:^24}) pointer({:^3}) $ ",
+                dbg,
+                format!("{:?}", last_code),
+                self.pointer
             );
+            io::stdout().flush().unwrap();
+            inp = String::new();
             io::stdin().read_line(&mut inp).unwrap();
-            n = inp.trim().parse().unwrap();
-            n > 0
+            c = inp.chars().next().unwrap();
+            c != 'c'
         } {
-            match n {
-                1 => println!("Mem {:?}", self.mem),
-                2 => println!("Pointer {:?}", self.pointer),
-                _ => println!("choose 0,1 or 2. Found {}", n),
+            match c {
+                'm' => {
+                    let mut parts = inp.splitn(3, ' ');
+                    // println!("{:?}", parts.next());
+                    // println!("{:?}", parts.next());
+                    // println!("{:?}", parts.next());
+                    parts.next();
+                    if let Some(ini) = parts.next() {
+                        if let Some(end) = parts.next() {
+                            let x: usize = ini.parse().unwrap_or(0);
+                            let y: usize = end.trim().parse().unwrap_or(self.mem.len() - 1);
+                            println!("{}mem {}..={} {:?}", dbg, x, y, &self.mem[x..=y]);
+                        } else {
+                            println!("{}expected m x..=y", dbg);
+                        }
+                    } else {
+                        println!("{}mem {:?}", dbg, self.mem);
+                    }
+                }
+                'p' => println!("{}pointer {:?}", dbg, self.pointer),
+                _ => println!("{}Choose m or p. Found {}", dbg, c),
             }
         }
     }
@@ -127,9 +148,18 @@ impl<'a> Program<'a> {
         }
     }
 
-    pub fn run(&mut self) {
+    pub fn run_debug_mode(&mut self) {
         let mut op: Opcode;
         let mut old_pointer;
+        println!(
+            "{}",
+            "[Debug] pick
+                 \n [c]       continue\
+                 \n [m x..=y] view mem in range x..=y, ignore = view all \
+                 \n [p]       view pointer"
+                .green()
+        );
+
         while {
             old_pointer = self.pointer;
             op = from_num(self.mem[self.pointer]);
@@ -138,5 +168,16 @@ impl<'a> Program<'a> {
         } {
             self.debug(op);
         }
+    }
+
+    pub fn run(&mut self) {
+        let mut op: Opcode;
+        let mut old_pointer;
+        while {
+            old_pointer = self.pointer;
+            op = from_num(self.mem[self.pointer]);
+            self.execute(op);
+            old_pointer != self.pointer
+        } {}
     }
 }
