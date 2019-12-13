@@ -29,6 +29,7 @@ impl<'a> Program<'a> {
             Opcode::JumpIfTrue(m0, m1) => self.jump_if_true(m0, m1),
             Opcode::JumpIfFalse(m0, m1) => self.jump_if_false(m0, m1),
             Opcode::LessThan(m0, m1) => self.less_than(m0, m1),
+            Opcode::Debug => self.debug(code),
         }
     }
 
@@ -96,6 +97,29 @@ impl<'a> Program<'a> {
 
     fn halt(&mut self) {}
 
+    fn debug(&self, last_code: Opcode) {
+        let mut inp = String::new();
+        let mut n: i32;
+        while {
+            println!(
+                "[Debug] Last op: {:?}\
+                 \n        [   0   ] continue\
+                 \n        [mem x y] view mem in range x..=y \
+                 \n        [   p   ] view pointer",
+                last_code
+            );
+            io::stdin().read_line(&mut inp).unwrap();
+            n = inp.trim().parse().unwrap();
+            n > 0
+        } {
+            match n {
+                1 => println!("Mem {:?}", self.mem),
+                2 => println!("Pointer {:?}", self.pointer),
+                _ => println!("choose 0,1 or 2. Found {}", n),
+            }
+        }
+    }
+
     fn get_param(&mut self, position: usize, inmediate_mode: bool) -> i32 {
         match inmediate_mode {
             true => self.mem[self.pointer + position],
@@ -109,8 +133,10 @@ impl<'a> Program<'a> {
         while {
             old_pointer = self.pointer;
             op = from_num(self.mem[self.pointer]);
-            self.execute(op);
+            self.execute(op.clone());
             old_pointer != self.pointer
-        } {}
+        } {
+            self.debug(op);
+        }
     }
 }

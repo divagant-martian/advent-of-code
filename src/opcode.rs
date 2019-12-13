@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Opcode {
     Add(bool, bool),
     Multiply(bool, bool),
@@ -9,6 +9,7 @@ pub enum Opcode {
     Input,
     Output(bool),
     Halt,
+    Debug,
 }
 
 pub fn from_num(num: i32) -> Opcode {

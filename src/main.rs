@@ -47,6 +47,6 @@ fn main() {
         .split(',')
         .map(|x| i32::from_str_radix(x, 10).unwrap())
         .collect::<Vec<i32>>();
-    // simple_run(&data);
-    run_7a(&data);
+    simple_run(&data);
+    // run_7a(&data);
 }
