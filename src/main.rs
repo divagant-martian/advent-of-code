@@ -3,23 +3,23 @@ mod program;
 mod solution_7a;
 mod solution_7b;
 
-use program::{ProgReceiver, ProgSender, Program};
+use program::{Int, ProgReceiver, ProgSender, Program};
 use std::env;
 use std::fs::read_to_string;
 
-impl ProgSender for &mut Vec<i32> {
-    fn put(&mut self, num: i32) {
+impl ProgSender for &mut Vec<Int> {
+    fn put(&mut self, num: Int) {
         self.push(num);
     }
 }
 
-impl ProgReceiver for &mut Vec<i32> {
-    fn get(&mut self) -> Option<i32> {
+impl ProgReceiver for &mut Vec<Int> {
+    fn get(&mut self) -> Option<Int> {
         self.pop()
     }
 }
 
-fn simple_run(data: &Vec<i32>, debug: bool) {
+fn simple_run(data: &Vec<Int>, debug: bool) {
     let mut input = vec![];
     let mut output = vec![];
     let mut program = Program::new(&data, &mut input, &mut output);
@@ -38,8 +38,8 @@ fn main() {
         .expect("bad input")
         .trim()
         .split(',')
-        .map(|x| i32::from_str_radix(x, 10).unwrap())
-        .collect::<Vec<i32>>();
+        .map(|x| Int::from_str_radix(x, 10).unwrap())
+        .collect::<Vec<Int>>();
     match args.next() {
         Some(x) => match x.as_str() {
             "7a" => solution_7a::run_solution(&data, false),

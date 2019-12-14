@@ -1,3 +1,5 @@
+use crate::program::Int;
+
 #[derive(Debug, Clone)]
 pub enum Mode {
     Inmediate,
@@ -19,7 +21,7 @@ pub enum Opcode {
 }
 
 impl Mode {
-    pub fn from_num(num: i32) -> Self {
+    pub fn from_num(num: Int) -> Self {
         match num {
             0 => Mode::Position,
             1 => Mode::Inmediate,
@@ -28,7 +30,7 @@ impl Mode {
         }
     }
 }
-pub fn from_num(num: i32) -> Opcode {
+pub fn from_num(num: Int) -> Opcode {
     let aux = num.div_euclid(100);
     let m0 = Mode::from_num(aux.rem_euclid(10));
     let m1 = Mode::from_num(aux.div_euclid(10));

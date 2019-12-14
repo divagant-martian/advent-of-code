@@ -1,21 +1,21 @@
-use crate::program::{ProgReceiver, ProgSender, Program};
+use crate::program::{Int, ProgReceiver, ProgSender, Program};
 use itertools::Itertools;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 
-impl ProgSender for Sender<i32> {
-    fn put(&mut self, num: i32) {
+impl ProgSender for Sender<Int> {
+    fn put(&mut self, num: Int) {
         self.send(num).unwrap();
     }
 }
 
-impl ProgReceiver for Receiver<i32> {
-    fn get(&mut self) -> Option<i32> {
+impl ProgReceiver for Receiver<Int> {
+    fn get(&mut self) -> Option<Int> {
         self.recv().ok()
     }
 }
 
-fn try_config(data: &Vec<i32>, phases: Vec<i32>) -> Option<i32> {
+fn try_config(data: &Vec<Int>, phases: Vec<Int>) -> Option<Int> {
     let (sender_a, receiver_b) = channel();
     let (sender_b, receiver_c) = channel();
     let (sender_c, receiver_d) = channel();
@@ -59,7 +59,7 @@ fn try_config(data: &Vec<i32>, phases: Vec<i32>) -> Option<i32> {
     }
 }
 
-pub fn run_solution(data: Vec<i32>, _debug: bool) {
+pub fn run_solution(data: Vec<Int>, _debug: bool) {
     let mut max = 0;
     for phase_setting in (5..=9).permutations(5) {
         max = try_config(&data, phase_setting).unwrap().max(max);

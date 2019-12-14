@@ -1,7 +1,7 @@
-use crate::program::Program;
+use crate::program::{Int, Program};
 use itertools::Itertools;
 
-pub fn run_solution(data: &Vec<i32>, debug: bool) {
+pub fn run_solution(data: &Vec<Int>, debug: bool) {
     let perms = (0..5).permutations(5);
     let mut input = vec![];
     let mut output = vec![0];

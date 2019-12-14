@@ -4,24 +4,26 @@ use std::fmt::Debug;
 use std::io;
 use std::io::Write;
 
+pub type Int = i64;
+
 pub struct Program<S: ProgSender, R: ProgReceiver> {
-    mem: Vec<i32>,
+    mem: Vec<Int>,
     pointer: usize,
     input: R,
     output: S,
-    rel_base: i32,
+    rel_base: Int,
 }
 
 pub trait ProgSender: Debug {
-    fn put(&mut self, num: i32);
+    fn put(&mut self, num: Int);
 }
 
 pub trait ProgReceiver: Debug {
-    fn get(&mut self) -> Option<i32>;
+    fn get(&mut self) -> Option<Int>;
 }
 
 impl<S: ProgSender, R: ProgReceiver> Program<S, R> {
-    pub fn new(data: &Vec<i32>, input: R, output: S) -> Self {
+    pub fn new(data: &Vec<Int>, input: R, output: S) -> Self {
         Program {
             mem: data.clone(),
             pointer: 0,
@@ -73,18 +75,18 @@ impl<S: ProgSender, R: ProgReceiver> Program<S, R> {
 
     fn less_than(&mut self, m0: Mode, m1: Mode) {
         let p = self.mem[self.pointer + 3] as usize;
-        self.mem[p] = (self.get_param(1, m0) < self.get_param(2, m1)) as i32;
+        self.mem[p] = (self.get_param(1, m0) < self.get_param(2, m1)) as Int;
         self.pointer += 4;
     }
 
     fn equals(&mut self, m0: Mode, m1: Mode) {
         let p = self.mem[self.pointer + 3] as usize;
-        self.mem[p] = (self.get_param(1, m0) == self.get_param(2, m1)) as i32;
+        self.mem[p] = (self.get_param(1, m0) == self.get_param(2, m1)) as Int;
         self.pointer += 4;
     }
 
     fn input(&mut self) {
-        let n: i32 = match self.input.get() {
+        let n: Int = match self.input.get() {
             Some(x) => x,
             None => {
                 let mut inp = String::new();
@@ -112,7 +114,7 @@ impl<S: ProgSender, R: ProgReceiver> Program<S, R> {
 
     fn halt(&mut self) {}
 
-    fn get_param(&mut self, position: usize, inmediate_mode: Mode) -> i32 {
+    fn get_param(&mut self, position: usize, inmediate_mode: Mode) -> Int {
         match inmediate_mode {
             Mode::Inmediate => self.mem[self.pointer + position],
             Mode::Position => self.mem[self.mem[self.pointer + position] as usize],
