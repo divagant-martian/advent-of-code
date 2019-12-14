@@ -1,22 +1,43 @@
 use crate::opcode::*;
 use colored::*;
+use std::fmt::Debug;
 use std::io;
 use std::io::Write;
 
-pub struct Program<'a> {
+pub struct Program<S: ProgSender, R: ProgReceiver> {
     mem: Vec<i32>,
     pointer: usize,
-    input: &'a mut Vec<i32>,
-    output: &'a mut Vec<i32>,
+    input: R,
+    output: S,
+    feedback: bool,
 }
 
-impl<'a> Program<'a> {
-    pub fn new(data: &Vec<i32>, input: &'a mut Vec<i32>, output: &'a mut Vec<i32>) -> Self {
+pub trait ProgSender: Debug {
+    fn put(&mut self, num: i32);
+}
+
+pub trait ProgReceiver: Debug {
+    fn get(&mut self) -> Option<i32>;
+}
+
+impl<S: ProgSender, R: ProgReceiver> Program<S, R> {
+    pub fn new_with_feedback(data: &Vec<i32>, input: R, output: S) -> Self {
         Program {
             mem: data.clone(),
             pointer: 0,
             input,
             output,
+            feedback: true,
+        }
+    }
+
+    pub fn new(data: &Vec<i32>, input: R, output: S) -> Self {
+        Program {
+            mem: data.clone(),
+            pointer: 0,
+            input,
+            output,
+            feedback: false,
         }
     }
     /// Dispatchs the corresponding operation and returns the new pointer
@@ -73,14 +94,19 @@ impl<'a> Program<'a> {
     }
 
     fn input(&mut self) {
-        let n: i32 = match self.input.pop() {
+        let n: i32 = match self.input.get() {
             Some(x) => x,
             None => {
                 let mut inp = String::new();
                 print!("Input please, human: ");
                 io::stdout().flush().unwrap();
                 io::stdin().read_line(&mut inp).unwrap();
-                inp.trim().parse().expect("bad numeric input")
+                let nn = inp.trim().parse();
+                if nn.is_err() {
+                    self.input();
+                    return;
+                }
+                nn.unwrap()
             }
         };
         let p = self.mem[self.pointer + 1] as usize;
@@ -93,7 +119,8 @@ impl<'a> Program<'a> {
             true => self.mem[self.pointer + 1],
             false => self.mem[self.mem[self.pointer + 1] as usize],
         };
-        self.output.push(out);
+        println!("{}", out);
+        self.output.put(out);
         self.pointer += 2;
     }
 
@@ -136,7 +163,9 @@ impl<'a> Program<'a> {
                     }
                 }
                 'p' => println!("{}pointer {:?}", dbg, self.pointer),
-                _ => println!("{}Choose m or p. Found {}", dbg, c),
+                'i' => println!("{}input {:?}", dbg, self.input),
+                'o' => println!("{}output {:?}", dbg, self.output),
+                _ => break,
             }
         }
     }
@@ -154,10 +183,13 @@ impl<'a> Program<'a> {
         println!(
             "{}",
             "[Debug] pick
-                 \n [c]       continue\
-                 \n [m x..=y] view mem in range x..=y, ignore = view all \
-                 \n [p]       view pointer"
-                .green()
+                 \n [c]     continue\
+                 \n [m x y] view mem in range x..=y, ignore = view all \
+                 \n [p]     view pointer\
+                 \n [i]     view input stack\
+                 \n [o]     view output stack
+                 "
+            .green()
         );
 
         while {
