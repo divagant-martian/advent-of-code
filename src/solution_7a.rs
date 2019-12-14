@@ -1,7 +1,7 @@
 use crate::program::{Int, Program};
 use itertools::Itertools;
 
-pub fn run_solution(data: &Vec<Int>, debug: bool) {
+pub fn run_solution(data: &Vec<Int>, debug: bool) -> (Int, Vec<Int>) {
     let perms = (0..5).permutations(5);
     let mut input = vec![];
     let mut output = vec![0];
@@ -27,4 +27,5 @@ pub fn run_solution(data: &Vec<Int>, debug: bool) {
         }
     }
     println!("max: {} produced by: {:?}", max, max_perm);
+    (max, max_perm)
 }

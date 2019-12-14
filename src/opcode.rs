@@ -15,6 +15,7 @@ pub enum Opcode {
     JumpIfFalse(Mode, Mode),
     LessThan(Mode, Mode),
     Equals(Mode, Mode),
+    SetRelBase(Mode),
     Input,
     Output(Mode),
     Halt,
@@ -43,6 +44,7 @@ pub fn from_num(num: Int) -> Opcode {
         6 => Opcode::JumpIfFalse(m0, m1),
         7 => Opcode::LessThan(m0, m1),
         8 => Opcode::Equals(m0, m1),
+        9 => Opcode::SetRelBase(m0),
         99 => Opcode::Halt,
         _ => panic!("bad code from num {}", num),
     }

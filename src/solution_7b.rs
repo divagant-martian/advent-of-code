@@ -59,10 +59,11 @@ fn try_config(data: &Vec<Int>, phases: Vec<Int>) -> Option<Int> {
     }
 }
 
-pub fn run_solution(data: Vec<Int>, _debug: bool) {
+pub fn run_solution(data: Vec<Int>, _debug: bool) -> Int {
     let mut max = 0;
     for phase_setting in (5..=9).permutations(5) {
         max = try_config(&data, phase_setting).unwrap().max(max);
     }
     println!("{:?}", max);
+    max
 }

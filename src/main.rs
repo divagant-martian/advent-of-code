@@ -1,23 +1,6 @@
-mod opcode;
-mod program;
-mod solution_7a;
-mod solution_7b;
-
-use program::{Int, ProgReceiver, ProgSender, Program};
+use intcode::program::{Int, Program};
+use intcode::{get_data_from_path, solution_7a, solution_7b};
 use std::env;
-use std::fs::read_to_string;
-
-impl ProgSender for &mut Vec<Int> {
-    fn put(&mut self, num: Int) {
-        self.push(num);
-    }
-}
-
-impl ProgReceiver for &mut Vec<Int> {
-    fn get(&mut self) -> Option<Int> {
-        self.pop()
-    }
-}
 
 fn simple_run(data: &Vec<Int>, debug: bool) {
     let mut input = vec![];
@@ -34,20 +17,14 @@ fn simple_run(data: &Vec<Int>, debug: bool) {
 fn main() {
     let mut args = env::args();
     let path: String = args.nth(1).expect("no data path provided");
-    let data = read_to_string(&path)
-        .expect("bad input")
-        .trim()
-        .split(',')
-        .map(|x| Int::from_str_radix(x, 10).unwrap())
-        .collect::<Vec<Int>>();
+    let data = get_data_from_path(&path);
     match args.next() {
         Some(x) => match x.as_str() {
-            "7a" => solution_7a::run_solution(&data, false),
-            "7a_dbg" => solution_7a::run_solution(&data, true),
-            "7b" => solution_7b::run_solution(data, false),
-            "7b_dbg" => (),
+            "7a" => println!("{:?}", solution_7a::run_solution(&data, false)),
+            "7a_dbg" => println!("{:?}", solution_7a::run_solution(&data, true)),
+            "7b" => println!("{:?}", solution_7b::run_solution(data, false)),
             "dbg" => simple_run(&data, true),
-            _ => panic!(),
+            _ => panic!("what?"),
         },
         None => simple_run(&data, false),
     }

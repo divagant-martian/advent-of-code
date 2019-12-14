@@ -44,6 +44,7 @@ impl<S: ProgSender, R: ProgReceiver> Program<S, R> {
             Opcode::JumpIfTrue(m0, m1) => self.jump_if_true(m0, m1),
             Opcode::JumpIfFalse(m0, m1) => self.jump_if_false(m0, m1),
             Opcode::LessThan(m0, m1) => self.less_than(m0, m1),
+            Opcode::SetRelBase(m0) => self.set_rel_base(m0),
         }
     }
 
@@ -83,6 +84,11 @@ impl<S: ProgSender, R: ProgReceiver> Program<S, R> {
         let p = self.mem[self.pointer + 3] as usize;
         self.mem[p] = (self.get_param(1, m0) == self.get_param(2, m1)) as Int;
         self.pointer += 4;
+    }
+
+    fn set_rel_base(&mut self, m0: Mode) {
+        self.rel_base = self.get_param(1, m0);
+        self.pointer += 2;
     }
 
     fn input(&mut self) {
@@ -128,6 +134,10 @@ impl<S: ProgSender, R: ProgReceiver> Program<S, R> {
 
     pub fn peak_output(&self) -> &S {
         &self.output
+    }
+
+    pub fn peak_mem(&self) -> &[Int] {
+        &self.mem
     }
 
     fn debug(&self, last_code: Opcode) {
