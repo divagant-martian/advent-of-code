@@ -9,7 +9,6 @@ pub struct Program<S: ProgSender, R: ProgReceiver> {
     pointer: usize,
     input: R,
     output: S,
-    feedback: bool,
 }
 
 pub trait ProgSender: Debug {
@@ -21,23 +20,12 @@ pub trait ProgReceiver: Debug {
 }
 
 impl<S: ProgSender, R: ProgReceiver> Program<S, R> {
-    pub fn new_with_feedback(data: &Vec<i32>, input: R, output: S) -> Self {
-        Program {
-            mem: data.clone(),
-            pointer: 0,
-            input,
-            output,
-            feedback: true,
-        }
-    }
-
     pub fn new(data: &Vec<i32>, input: R, output: S) -> Self {
         Program {
             mem: data.clone(),
             pointer: 0,
             input,
             output,
-            feedback: false,
         }
     }
     /// Dispatchs the corresponding operation and returns the new pointer
@@ -119,12 +107,19 @@ impl<S: ProgSender, R: ProgReceiver> Program<S, R> {
             true => self.mem[self.pointer + 1],
             false => self.mem[self.mem[self.pointer + 1] as usize],
         };
-        println!("{}", out);
         self.output.put(out);
         self.pointer += 2;
     }
 
     fn halt(&mut self) {}
+
+    pub fn peak_input(&self) -> &R {
+        &self.input
+    }
+
+    pub fn peak_output(&self) -> &S {
+        &self.output
+    }
 
     fn debug(&self, last_code: Opcode) {
         let dbg = "[Debug] ".green();
@@ -146,9 +141,6 @@ impl<S: ProgSender, R: ProgReceiver> Program<S, R> {
             match c {
                 'm' => {
                     let mut parts = inp.splitn(3, ' ');
-                    // println!("{:?}", parts.next());
-                    // println!("{:?}", parts.next());
-                    // println!("{:?}", parts.next());
                     parts.next();
                     if let Some(ini) = parts.next() {
                         if let Some(end) = parts.next() {
@@ -182,13 +174,13 @@ impl<S: ProgSender, R: ProgReceiver> Program<S, R> {
         let mut old_pointer;
         println!(
             "{}",
-            "[Debug] pick
-                 \n [c]     continue\
-                 \n [m x y] view mem in range x..=y, ignore = view all \
-                 \n [p]     view pointer\
-                 \n [i]     view input stack\
-                 \n [o]     view output stack
-                 "
+            "pick
+              [c]     continue
+              [m x y] view mem in range x..=y, ignore = view all
+              [p]     view pointer
+              [i]     view input stack
+              [o]     view output stack
+             "
             .green()
         );
 

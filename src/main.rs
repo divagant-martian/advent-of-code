@@ -1,6 +1,7 @@
 mod opcode;
 mod program;
 mod solution_7a;
+mod solution_7b;
 
 use program::{ProgReceiver, ProgSender, Program};
 use std::env;
@@ -43,6 +44,8 @@ fn main() {
         Some(x) => match x.as_str() {
             "7a" => solution_7a::run_solution(&data, false),
             "7a_dbg" => solution_7a::run_solution(&data, true),
+            "7b" => solution_7b::run_solution(data, false),
+            "7b_dbg" => (),
             "dbg" => simple_run(&data, true),
             _ => panic!(),
         },
