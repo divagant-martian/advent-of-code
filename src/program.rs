@@ -9,6 +9,7 @@ pub struct Program<S: ProgSender, R: ProgReceiver> {
     pointer: usize,
     input: R,
     output: S,
+    rel_base: i32,
 }
 
 pub trait ProgSender: Debug {
@@ -26,6 +27,7 @@ impl<S: ProgSender, R: ProgReceiver> Program<S, R> {
             pointer: 0,
             input,
             output,
+            rel_base: 0,
         }
     }
     /// Dispatchs the corresponding operation and returns the new pointer
@@ -43,39 +45,39 @@ impl<S: ProgSender, R: ProgReceiver> Program<S, R> {
         }
     }
 
-    fn add(&mut self, m0: bool, m1: bool) {
+    fn add(&mut self, m0: Mode, m1: Mode) {
         let p = self.mem[self.pointer + 3] as usize;
         self.mem[p] = self.get_param(1, m0) + self.get_param(2, m1);
         self.pointer += 4;
     }
 
-    fn multiply(&mut self, m0: bool, m1: bool) {
+    fn multiply(&mut self, m0: Mode, m1: Mode) {
         let p = self.mem[self.pointer + 3] as usize;
         self.mem[p] = self.get_param(1, m0) * self.get_param(2, m1);
         self.pointer += 4;
     }
 
-    fn jump_if_true(&mut self, m0: bool, m1: bool) {
+    fn jump_if_true(&mut self, m0: Mode, m1: Mode) {
         self.pointer = match self.get_param(1, m0) != 0 {
             true => self.get_param(2, m1) as usize,
             false => self.pointer + 3,
         }
     }
 
-    fn jump_if_false(&mut self, m0: bool, m1: bool) {
+    fn jump_if_false(&mut self, m0: Mode, m1: Mode) {
         self.pointer = match self.get_param(1, m0) == 0 {
             true => self.get_param(2, m1) as usize,
             false => self.pointer + 3,
         }
     }
 
-    fn less_than(&mut self, m0: bool, m1: bool) {
+    fn less_than(&mut self, m0: Mode, m1: Mode) {
         let p = self.mem[self.pointer + 3] as usize;
         self.mem[p] = (self.get_param(1, m0) < self.get_param(2, m1)) as i32;
         self.pointer += 4;
     }
 
-    fn equals(&mut self, m0: bool, m1: bool) {
+    fn equals(&mut self, m0: Mode, m1: Mode) {
         let p = self.mem[self.pointer + 3] as usize;
         self.mem[p] = (self.get_param(1, m0) == self.get_param(2, m1)) as i32;
         self.pointer += 4;
@@ -102,16 +104,21 @@ impl<S: ProgSender, R: ProgReceiver> Program<S, R> {
         self.pointer += 2;
     }
 
-    fn output(&mut self, m0: bool) {
-        let out = match m0 {
-            true => self.mem[self.pointer + 1],
-            false => self.mem[self.mem[self.pointer + 1] as usize],
-        };
+    fn output(&mut self, m0: Mode) {
+        let out = self.get_param(1, m0);
         self.output.put(out);
         self.pointer += 2;
     }
 
     fn halt(&mut self) {}
+
+    fn get_param(&mut self, position: usize, inmediate_mode: Mode) -> i32 {
+        match inmediate_mode {
+            Mode::Inmediate => self.mem[self.pointer + position],
+            Mode::Position => self.mem[self.mem[self.pointer + position] as usize],
+            Mode::Relative => unimplemented!(),
+        }
+    }
 
     pub fn peak_input(&self) -> &R {
         &self.input
@@ -159,13 +166,6 @@ impl<S: ProgSender, R: ProgReceiver> Program<S, R> {
                 'o' => println!("{}output {:?}", dbg, self.output),
                 _ => break,
             }
-        }
-    }
-
-    fn get_param(&mut self, position: usize, inmediate_mode: bool) -> i32 {
-        match inmediate_mode {
-            true => self.mem[self.pointer + position],
-            false => self.mem[self.mem[self.pointer + position] as usize],
         }
     }
 
