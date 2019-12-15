@@ -23,7 +23,7 @@ fn test_02() {
         let mut prog = Program::new(&data, &mut input, &mut output);
         prog.run();
 
-        assert_eq!(prog.peak_mem(), mem_out);
+        assert_eq!(&prog.peak_mem()[0..mem_out.len()], mem_out);
     }
 }
 
@@ -61,7 +61,7 @@ fn test_05a() {
     let mut prog = Program::new(&data, &mut input, &mut output);
     prog.run();
 
-    assert_eq!(prog.peak_mem(), &[1002, 4, 3, 4, 99]);
+    assert_eq!(&prog.peak_mem()[0..5], &[1002, 4, 3, 4, 99]);
 }
 
 #[test]
@@ -70,7 +70,7 @@ fn test_05a_final() {
     let mut input = vec![1];
     let mut output = vec![];
     Program::new(&data, &mut input, &mut output).run();
-    assert_eq!(output, vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 7286649]);
+    assert_eq!(&output[0..10], [0, 0, 0, 0, 0, 0, 0, 0, 0, 7286649]);
 }
 
 #[test]

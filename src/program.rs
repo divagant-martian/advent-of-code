@@ -24,8 +24,10 @@ pub trait ProgReceiver: Debug {
 
 impl<S: ProgSender, R: ProgReceiver> Program<S, R> {
     pub fn new(data: &Vec<Int>, input: R, output: S) -> Self {
+        let mut mem = data.clone();
+        mem.resize_with(2024, Default::default);
         Program {
-            mem: data.clone(),
+            mem,
             pointer: 0,
             input,
             output,
@@ -87,7 +89,7 @@ impl<S: ProgSender, R: ProgReceiver> Program<S, R> {
     }
 
     fn set_rel_base(&mut self, m0: Mode) {
-        self.rel_base = self.get_param(1, m0);
+        self.rel_base += self.get_param(1, m0);
         self.pointer += 2;
     }
 
@@ -124,7 +126,10 @@ impl<S: ProgSender, R: ProgReceiver> Program<S, R> {
         match inmediate_mode {
             Mode::Inmediate => self.mem[self.pointer + position],
             Mode::Position => self.mem[self.mem[self.pointer + position] as usize],
-            Mode::Relative => unimplemented!(),
+            Mode::Relative => {
+                let param = self.mem[self.pointer + position];
+                self.mem[(self.rel_base + param) as usize]
+            }
         }
     }
 
@@ -176,6 +181,7 @@ impl<S: ProgSender, R: ProgReceiver> Program<S, R> {
                 'p' => println!("{}pointer {:?}", dbg, self.pointer),
                 'i' => println!("{}input {:?}", dbg, self.input),
                 'o' => println!("{}output {:?}", dbg, self.output),
+                'b' => println!("{}rel_base {:?}", dbg, self.rel_base),
                 _ => break,
             }
         }
@@ -186,12 +192,14 @@ impl<S: ProgSender, R: ProgReceiver> Program<S, R> {
         let mut old_pointer;
         println!(
             "{}",
-            "pick
+            "
+            pick
               [c]     continue
               [m x y] view mem in range x..=y, ignore = view all
               [p]     view pointer
               [i]     view input stack
               [o]     view output stack
+              [b]     view rel_base
              "
             .green()
         );
