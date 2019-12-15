@@ -197,3 +197,12 @@ fn test_09a() {
         assert_eq!(output, expected_out);
     }
 }
+
+#[test]
+fn test_09a_final() {
+    let data = get_data_from_path("data/day09_final.txt");
+    let mut input = vec![1];
+    let mut output = vec![];
+    Program::new(&data, &mut input, &mut output).run();
+    assert_eq!(&output, &[4080871669]);
+}
