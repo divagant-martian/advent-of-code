@@ -20,6 +20,7 @@ fn parse_line(line: &str) -> (&str, (usize, Vec<(&str, usize)>)) {
 }
 
 fn main() {
+    println!("Checking part 1");
     assert_eq!(find_ore(1, "data/test0.txt"), 165);
     assert_eq!(find_ore(1, "data/test1.txt"), 31);
     assert_eq!(find_ore(1, "data/test2.txt"), 13312);
@@ -27,19 +28,11 @@ fn main() {
     assert_eq!(find_ore(1, "data/test4.txt"), 2210736);
     assert_eq!(find_ore(1, "data/input.txt"), 1037742);
 
+    println!("checking part 2");
     assert_eq!(find_max_fuel(1_000_000_000_000, "data/test2.txt"), 82892753);
     assert_eq!(find_max_fuel(1_000_000_000_000, "data/test3.txt"), 5586022);
     assert_eq!(find_max_fuel(1_000_000_000_000, "data/test4.txt"), 460664);
-
-    println!(
-        "part 2: {}",
-        find_max_fuel(1_000_000_000_000, "data/input.txt")
-    );
-    // assert_eq!(find_ore(1, "data/test1.txt"), 31);
-    // assert_eq!(find_ore(1, "data/test2.txt"), 13312);
-    // assert_eq!(find_ore(1, "data/test3.txt"), 180697);
-    // assert_eq!(find_ore(1, "data/test4.txt"), 2210736);
-    // assert_eq!(find_ore(1, "data/input.txt"), 1037742);
+    assert_eq!(find_max_fuel(1_000_000_000_000, "data/input.txt"), 1572358);
 }
 
 fn make_fuel<'a>(
