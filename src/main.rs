@@ -1,13 +1,17 @@
 use intcode::get_data_from_path;
 use intcode::program::{Int, Program};
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, VecDeque};
 use std::io::{self, Read, Write};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 use termion::raw::{IntoRawMode, RawTerminal};
 use termion::{clear, color, cursor, style};
+use Direction::*;
+use Tile::*;
 
 const INFINITY: Int = Int::max_value();
+const SOURCE: (Int, Int) = (35, 25);
+const TARGET_NOT_FOUND: (Int, Int) = (INFINITY, INFINITY);
 
 struct Explorer<R, W: Write> {
     robot: (Int, Int),
@@ -15,9 +19,9 @@ struct Explorer<R, W: Write> {
     stdout: W,
     stdin: R,
     visited: HashMap<(Int, Int), Tile>,
-    pending: Vec<(Int, Int)>,
+    pending: VecDeque<(Int, Int)>,
     distances: HashMap<(Int, Int), Int>,
-    predecesors: HashMap<(Int, Int), Int>,
+    predecesors: HashMap<(Int, Int), Direction>,
     robot_out: Receiver<Int>,
     robot_in: Sender<Int>,
 }
@@ -30,12 +34,23 @@ enum Direction {
     Down = 2,
 }
 
+impl Direction {
+    fn oposite(&self) -> Direction {
+        match self {
+            Up => Down,
+            Left => Right,
+            Right => Left,
+            Down => Up,
+        }
+    }
+}
+
 #[derive(Copy, Clone, PartialEq, Eq)]
 enum Tile {
-    Robot,
     OpenSpace,
     Wall,
     Target,
+    Robot,
 }
 
 impl<R: Read, W: Write> Explorer<R, W> {
@@ -46,12 +61,12 @@ impl<R: Read, W: Write> Explorer<R, W> {
         robot_out: Receiver<Int>,
     ) -> Explorer<R, RawTerminal<W>> {
         Explorer {
-            robot: (35, 10),
-            target: (INFINITY, INFINITY),
+            robot: SOURCE,
+            target: TARGET_NOT_FOUND,
             stdout: stdout.into_raw_mode().unwrap(),
             stdin: stdin,
             visited: HashMap::new(),
-            pending: vec![],
+            pending: VecDeque::new(),
             distances: HashMap::new(),
             predecesors: HashMap::new(),
             robot_in,
@@ -61,22 +76,50 @@ impl<R: Read, W: Write> Explorer<R, W> {
 
     fn start(&mut self) {
         self.init();
+        while let Some(next) = self.pending.pop_front() {
+            if next == self.target {
+                self.visited.insert(next, Target);
+                // break;
+            }
 
-        loop {
-            // read a single byte from stdin
+            self.go_to(next);
+            // if it was in the queue it is either an open space or the target
+            self.visited.insert(next, OpenSpace);
+
+            for dir in &[Up, Right, Down, Left] {
+                // explore each direction
+                let dir = *dir;
+                let n = self.get_position(dir);
+                if !self.visited.contains_key(&n) {
+                    let (pos, kind) = self.explore(dir);
+
+                    if kind == Wall {
+                        self.visited.insert(pos, kind);
+                        continue;
+                    }
+
+                    let alt_distance = self.distances.get(&next).unwrap() + 1;
+                    if &alt_distance < self.distances.get(&pos).unwrap_or(&INFINITY) {
+                        self.distances.insert(pos, alt_distance);
+                        self.predecesors.insert(pos, dir.oposite());
+                        if !self.pending.contains(&pos) {
+                            self.pending.push_back(pos);
+                        }
+                    }
+
+                    if kind == Target {
+                        self.target = pos;
+                    }
+                }
+            }
+            // wait for an Enter
+            self.update();
             let mut b = [0];
             self.stdin.read(&mut b).unwrap();
 
             match b[0] {
-                b'a' => self.move_robot(Direction::Left),
-                b's' => self.move_robot(Direction::Down),
-                b'w' => self.move_robot(Direction::Up),
-                b'd' => self.move_robot(Direction::Right),
-                b'q' => return,
                 _ => (),
             }
-
-            self.stdout.flush().unwrap();
         }
     }
 
@@ -89,39 +132,86 @@ impl<R: Read, W: Write> Explorer<R, W> {
         )
         .unwrap();
         self.mark(Tile::Robot, None);
+        self.pending.push_front(self.robot);
+        self.distances.insert(self.robot, 0);
         self.update();
     }
 
     fn update(&mut self) {
-        write!(self.stdout, "{}", cursor::Hide);
+        write!(self.stdout, "{}", cursor::Hide).unwrap();
         self.stdout.flush().unwrap();
     }
-    fn move_robot(&mut self, dir: Direction) {
-        self.robot_in.send(dir as Int).unwrap();
-        // 0: The repair droid hit a wall. Its position has not changed.
-        // 1: The repair droid has moved one step in the requested direction.
-        // 2: The repair droid has moved one step in the requested direction;
-        //    its new position is the location of the oxygen system.
 
+    fn go_to(&mut self, pos: (Int, Int)) {
+        // go back to source
+        while let Some(&dir) = self.predecesors.get(&self.robot) {
+            self.move_robot(dir);
+        }
+        assert_eq!(self.robot, SOURCE);
+
+        // go from source to pos
+        let mut current = pos;
+        let mut directions = vec![];
+        while let Some(dir) = self.predecesors.get(&current) {
+            let (mut x, mut y) = current;
+            match dir {
+                Direction::Up => y -= 1,
+                Direction::Down => y += 1,
+                Direction::Left => x -= 1,
+                Direction::Right => x += 1,
+            };
+            current = (x, y);
+            directions.push(dir.oposite());
+        }
+        for dir in directions.iter().rev() {
+            self.move_robot(*dir);
+        }
+
+        assert_eq!(self.robot, pos);
+    }
+
+    /// Explore returns what is found in the direction given by dir in the form
+    /// (x, y) is of kind k. Leaves the robot in its original position
+    fn explore(&mut self, dir: Direction) -> ((Int, Int), Tile) {
+        let robot_backup = self.robot;
+
+        let new_info = self.move_robot(dir);
+        if self.robot != robot_backup {
+            self.move_robot(dir.oposite());
+        }
+
+        new_info
+    }
+
+    /// moves the robot and returns the new information gathered in the form
+    /// (x, y) is of kind k:Tile
+    fn move_robot(&mut self, dir: Direction) -> ((Int, Int), Tile) {
+        self.robot_in.send(dir as Int).unwrap();
         if let Ok(out) = self.robot_out.recv() {
-            match out {
-                0 => self.mark(Tile::Wall, Some(dir)),
+            return match out {
+                0 => {
+                    self.mark(Wall, Some(dir));
+                    (self.get_position(dir), Wall)
+                }
                 1 => {
-                    self.mark(Tile::OpenSpace, None); // remove the robot
-                    self.robot = self.get_position(dir); // update the robots pos
-                    self.mark(Tile::Robot, None);
+                    self.mark(OpenSpace, None);
+                    self.mark(Robot, Some(dir));
+                    self.robot = self.get_position(dir);
+                    (self.robot, OpenSpace)
                 }
                 2 => {
-                    self.mark(Tile::OpenSpace, None); // remove the robot
-                    self.robot = self.get_position(dir); // update robot's pos
-                    self.target = self.robot; // set the target
-                    self.mark(Tile::Robot, None);
+                    self.mark(OpenSpace, None);
+                    self.target = self.get_position(dir);
+                    self.mark(Robot, Some(dir));
+                    self.robot = self.target;
+                    (self.robot, Target)
                 }
-                _ => panic!("the robot sent {}", out),
-            }
+                _ => panic!("robot got crazy: {}", out),
+            };
         }
-        self.update();
+        unreachable!("robot did not answer");
     }
+
     fn get_position(&self, dir: Direction) -> (Int, Int) {
         let (mut x, mut y) = self.robot;
         match dir {
@@ -132,6 +222,7 @@ impl<R: Read, W: Write> Explorer<R, W> {
         }
         (x, y)
     }
+
     fn mark(&mut self, kind: Tile, dir: Option<Direction>) {
         let (x, y) = if let Some(d) = dir {
             self.get_position(d)
@@ -139,7 +230,7 @@ impl<R: Read, W: Write> Explorer<R, W> {
             self.robot
         };
 
-        write!(self.stdout, "{}", cursor::Goto(x as u16, y as u16));
+        write!(self.stdout, "{}", cursor::Goto(x as u16, y as u16)).unwrap();
         // if in target paint the background cyan when over that tile,
         // or the trophy otherwise
         if (x, y) == self.target {
@@ -152,7 +243,8 @@ impl<R: Read, W: Write> Explorer<R, W> {
                     color::Bg(cyan),
                     '*',
                     color::Bg(color::Reset)
-                );
+                )
+                .unwrap();
             } else {
                 // trophy icon
                 write!(
@@ -161,7 +253,8 @@ impl<R: Read, W: Write> Explorer<R, W> {
                     color::Fg(cyan),
                     '๏',
                     color::Fg(color::Reset)
-                );
+                )
+                .unwrap();
             }
         } else {
             let icon = match kind {
@@ -170,27 +263,22 @@ impl<R: Read, W: Write> Explorer<R, W> {
                 Tile::Wall => '█',
                 Tile::Target => '๏',
             };
-            write!(self.stdout, "{}", icon);
+            write!(self.stdout, "{}", icon).unwrap();
         }
         write!(
             self.stdout,
             "{}",
             cursor::Goto(self.robot.0 as u16, self.robot.1 as u16)
-        );
+        )
+        .unwrap();
     }
 }
 
 impl<R, W: Write> Drop for Explorer<R, W> {
     fn drop(&mut self) {
         // When done, restore the defaults to avoid messing with the terminal.
-        write!(
-            self.stdout,
-            "{}{}{}",
-            clear::All,
-            style::Reset,
-            cursor::Goto(1, 1)
-        )
-        .unwrap();
+        write!(self.stdout, "{}{}", style::Reset, cursor::Goto(1, 1)).unwrap();
+        println!("{:?}", self.distances.get(&self.target));
     }
 }
 
@@ -205,7 +293,7 @@ fn main() {
     let data = get_data_from_path(
         "/home/freyja/Documents/opensource/adventofcode/repair_droid/data/input.txt",
     );
-    let thread_handle = thread::spawn(move || {
+    thread::spawn(move || {
         let mut program = Program::new(&data, input_receiver, output_sender);
         program.run();
     });
