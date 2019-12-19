@@ -118,6 +118,7 @@ impl<R: Read, W: Write> Explorer<R, W> {
             self.stdin.read(&mut b).unwrap();
 
             match b[0] {
+                b'q' => return,
                 _ => (),
             }
         }
@@ -143,6 +144,7 @@ impl<R: Read, W: Write> Explorer<R, W> {
     }
 
     fn go_to(&mut self, pos: (Int, Int)) {
+        self.mark(OpenSpace, None);
         // go back to source
         while let Some(&dir) = self.predecesors.get(&self.robot) {
             self.move_robot(dir);
@@ -168,6 +170,7 @@ impl<R: Read, W: Write> Explorer<R, W> {
         }
 
         assert_eq!(self.robot, pos);
+        self.mark(Robot, None);
     }
 
     /// Explore returns what is found in the direction given by dir in the form
@@ -195,14 +198,12 @@ impl<R: Read, W: Write> Explorer<R, W> {
                 }
                 1 => {
                     self.mark(OpenSpace, None);
-                    self.mark(Robot, Some(dir));
                     self.robot = self.get_position(dir);
                     (self.robot, OpenSpace)
                 }
                 2 => {
                     self.mark(OpenSpace, None);
                     self.target = self.get_position(dir);
-                    self.mark(Robot, Some(dir));
                     self.robot = self.target;
                     (self.robot, Target)
                 }
@@ -277,7 +278,15 @@ impl<R: Read, W: Write> Explorer<R, W> {
 impl<R, W: Write> Drop for Explorer<R, W> {
     fn drop(&mut self) {
         // When done, restore the defaults to avoid messing with the terminal.
-        write!(self.stdout, "{}{}", style::Reset, cursor::Goto(1, 1)).unwrap();
+        let size = termion::terminal_size().unwrap();
+        write!(
+            self.stdout,
+            "{}{}{}\r",
+            style::Reset,
+            cursor::Goto(1, size.1),
+            cursor::Show
+        )
+        .unwrap();
         println!("{:?}", self.distances.get(&self.target));
     }
 }
