@@ -32,10 +32,10 @@ enum Direction {
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 enum Tile {
-    Robot = '👽' as isize,
-    OpenSpace = ' ' as isize,
-    Wall = '#' as isize,
-    Target = '🏆' as isize,
+    Robot,
+    OpenSpace,
+    Wall,
+    Target,
 }
 
 impl<R: Read, W: Write> Explorer<R, W> {
@@ -88,10 +88,12 @@ impl<R: Read, W: Write> Explorer<R, W> {
             cursor::Goto(self.robot.0 as u16, self.robot.1 as u16)
         )
         .unwrap();
+        self.mark(Tile::Robot, None);
         self.update();
     }
 
     fn update(&mut self) {
+        write!(self.stdout, "{}", cursor::Hide);
         self.stdout.flush().unwrap();
     }
     fn move_robot(&mut self, dir: Direction) {
@@ -148,7 +150,7 @@ impl<R: Read, W: Write> Explorer<R, W> {
                     self.stdout,
                     "{}{}{}",
                     color::Bg(cyan),
-                    Tile::Robot as u8 as char,
+                    '*',
                     color::Bg(color::Reset)
                 );
             } else {
@@ -157,12 +159,18 @@ impl<R: Read, W: Write> Explorer<R, W> {
                     self.stdout,
                     "{}{}{}",
                     color::Fg(cyan),
-                    Tile::Target as u8 as char,
+                    '๏',
                     color::Fg(color::Reset)
                 );
             }
         } else {
-            write!(self.stdout, "{}", kind as u8 as char);
+            let icon = match kind {
+                Tile::OpenSpace => '.',
+                Tile::Robot => '*',
+                Tile::Wall => '█',
+                Tile::Target => '๏',
+            };
+            write!(self.stdout, "{}", icon);
         }
         write!(
             self.stdout,
