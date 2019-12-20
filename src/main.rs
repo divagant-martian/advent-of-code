@@ -24,6 +24,8 @@ struct Explorer<R, W: Write> {
     predecesors: HashMap<(Int, Int), Direction>,
     robot_out: Receiver<Int>,
     robot_in: Sender<Int>,
+    no_target: bool,
+    source: (Int, Int),
 }
 
 #[derive(Copy, Clone)]
@@ -71,18 +73,30 @@ impl<R: Read, W: Write> Explorer<R, W> {
             predecesors: HashMap::new(),
             robot_in,
             robot_out,
+            no_target: false,
+            source: SOURCE,
         }
     }
 
     fn start(&mut self) {
         self.init();
         while let Some(next) = self.pending.pop_front() {
+            self.go_to(next);
+
             if next == self.target {
                 self.visited.insert(next, Target);
+
+                self.visited.clear();
+                self.pending.clear();
+                self.predecesors.clear();
+                self.distances.clear();
+                self.source = next;
+                self.target = TARGET_NOT_FOUND;
+                self.no_target = true;
+                self.distances.insert(next, 0);
                 // break;
             }
 
-            self.go_to(next);
             // if it was in the queue it is either an open space or the target
             self.visited.insert(next, OpenSpace);
 
@@ -114,13 +128,13 @@ impl<R: Read, W: Write> Explorer<R, W> {
             }
             // wait for an Enter
             self.update();
-            let mut b = [0];
-            self.stdin.read(&mut b).unwrap();
-
-            match b[0] {
-                b'q' => return,
-                _ => (),
-            }
+            // let mut b = [0];
+            // self.stdin.read(&mut b).unwrap();
+            //
+            // match b[0] {
+            //     b'q' => return,
+            //     _ => (),
+            // }
         }
     }
 
@@ -149,7 +163,7 @@ impl<R: Read, W: Write> Explorer<R, W> {
         while let Some(&dir) = self.predecesors.get(&self.robot) {
             self.move_robot(dir);
         }
-        assert_eq!(self.robot, SOURCE);
+        assert_eq!(self.robot, self.source);
 
         // go from source to pos
         let mut current = pos;
@@ -203,8 +217,12 @@ impl<R: Read, W: Write> Explorer<R, W> {
                 }
                 2 => {
                     self.mark(OpenSpace, None);
-                    self.target = self.get_position(dir);
-                    self.robot = self.target;
+                    if self.no_target {
+                        self.robot = self.get_position(dir);
+                    } else {
+                        self.target = self.get_position(dir);
+                        self.robot = self.target;
+                    }
                     (self.robot, Target)
                 }
                 _ => panic!("robot got crazy: {}", out),
@@ -287,7 +305,8 @@ impl<R, W: Write> Drop for Explorer<R, W> {
             cursor::Show
         )
         .unwrap();
-        println!("{:?}", self.distances.get(&self.target));
+        // println!("{:?}", self.distances.get(&self.target));
+        println!("{:?}", self.distances.values().max());
     }
 }
 
