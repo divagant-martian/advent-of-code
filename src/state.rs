@@ -10,7 +10,6 @@ pub enum Tile {
     Me,
 }
 
-#[derive(Clone)]
 pub struct State {
     tiles: HashMap<(u16, u16), Tile>,
     me: (u16, u16),
@@ -99,18 +98,6 @@ impl State {
             .collect();
     }
 
-    /// Heuristic function: How good this state is
-    /// this is at most as good as the farthest key (this makes no sense)
-    pub fn h(&self) -> u16 {
-        *self
-            .key_dists
-            .iter()
-            .max_by_key(|(_, v)| *v)
-            .unwrap_or((&(0, 0), &0))
-            .1
-        // unimplemented!();<F2>
-    }
-
     pub fn hash(&self) -> (String, (u16, u16)) {
         let mut remaining_keys: Vec<_> = self
             .key_dists
@@ -145,14 +132,6 @@ impl State {
                 (State::from_hashmap(new_tiles), dist)
             })
             .collect()
-    }
-
-    pub fn me(&self) -> (u16, u16) {
-        self.me
-    }
-
-    pub fn distances(&self) -> &HashMap<(u16, u16), u16> {
-        &self.key_dists
     }
 }
 

@@ -24,7 +24,7 @@ fn get_data(path: &str) -> HashMap<(u16, u16), Tile> {
 }
 
 fn main_dijkstra(data: HashMap<(u16, u16), Tile>) {
-    const max_dist: u16 = u16::max_value();
+    const MAX_DIST: u16 = u16::max_value();
     let source = State::from_hashmap(data);
     let src_hash = source.hash();
 
@@ -38,8 +38,6 @@ fn main_dijkstra(data: HashMap<(u16, u16), Tile>) {
     while let Some(state) = frontier.pop_front() {
         let parent_hash = state.hash();
         visited.insert(parent_hash.clone());
-        // println!("Visited this state:\n{}", state);
-        println!("Visited this state: {}", state.hash().0);
         let &parent_dist = distances.get(&parent_hash).unwrap();
 
         for (next_state, rel_dist) in state.expand() {
@@ -48,7 +46,7 @@ fn main_dijkstra(data: HashMap<(u16, u16), Tile>) {
                 continue;
             }
             let alt = parent_dist + rel_dist;
-            if &alt < distances.get(&hash).unwrap_or(&max_dist) {
+            if &alt < distances.get(&hash).unwrap_or(&MAX_DIST) {
                 distances.insert(hash, alt);
                 if !frontier.contains(&next_state) {
                     frontier.push_back(next_state);
@@ -59,7 +57,7 @@ fn main_dijkstra(data: HashMap<(u16, u16), Tile>) {
     let min = distances
         .into_iter()
         .filter_map(
-            |((hash, pos), v)| {
+            |((hash, _pos), v)| {
                 if hash.is_empty() {
                     Some(v)
                 } else {
@@ -76,10 +74,4 @@ fn main() {
     let path: String = args.nth(1).expect("no data path provided");
     let data = get_data(&path);
     main_dijkstra(data);
-    // println!(
-    //     "{}",
-    //     data.iter()
-    //         .map(|t| format!("{:<2?} {:?}\n", t.0, t.1))
-    //         .collect::<String>()
-    // );
 }
