@@ -38,6 +38,7 @@ fn main_dijkstra(data: HashMap<(u16, u16), Tile>) {
     while let Some(state) = frontier.pop_front() {
         let parent_hash = state.hash();
         visited.insert(parent_hash.clone());
+
         let &parent_dist = distances.get(&parent_hash).unwrap();
 
         for (next_state, rel_dist) in state.expand() {

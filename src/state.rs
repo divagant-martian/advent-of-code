@@ -12,28 +12,27 @@ pub enum Tile {
 
 pub struct State {
     tiles: HashMap<(u16, u16), Tile>,
-    me: (u16, u16),
-    key_dists: HashMap<(u16, u16), u16>,
+    meepos: Vec<(u16, u16)>,
+    ///for each reachable key, how far is it and which can take it
+    key_dists: HashMap<(u16, u16), (u16, usize)>,
 }
 
 impl State {
     pub fn from_hashmap(mut tiles: HashMap<(u16, u16), Tile>) -> Self {
-        let (&me, _) = tiles.iter().find(|(_, &t)| t == Me).expect("me not found");
-        tiles.remove(&me);
-        State::new(tiles, me)
+        let meepos = tiles
+            .iter()
+            .filter_map(|(&pos, &t)| if t == Me { Some(pos) } else { None })
+            .collect::<Vec<_>>();
+        for m in &meepos {
+            tiles.remove(&m);
+        }
+        State::new(tiles, meepos)
     }
 
-    pub fn new(tiles: HashMap<(u16, u16), Tile>, me: (u16, u16)) -> Self {
-        if let Some((&me2, _)) = tiles.iter().find(|(_pos, &t)| t == Me) {
-            if me2 == me {
-                panic!("duplicated me");
-            }
-            panic!("inconsistent me position between tiles and me params");
-        }
-
+    fn new(tiles: HashMap<(u16, u16), Tile>, meepos: Vec<(u16, u16)>) -> Self {
         let mut state = State {
             tiles,
-            me,
+            meepos,
             key_dists: HashMap::new(),
         };
         state.calc_distances();
@@ -41,12 +40,14 @@ impl State {
     }
 
     fn calc_distances(&mut self) {
+        const NO_DISTANCE: &(u16, usize) = &(u16::max_value(), usize::max_value());
         let mut frontier = VecDeque::new();
-        let mut distances = HashMap::new();
+        let mut distances: HashMap<(u16, u16), (u16, usize)> = HashMap::new();
         let mut visited = HashSet::new();
-        let me = self.me;
-        frontier.push_front(me);
-        distances.insert(me, 0);
+        for (meepo, me) in self.meepos.iter().enumerate() {
+            frontier.push_front(*me);
+            distances.insert(*me, (0, meepo));
+        }
 
         while let Some((x, y)) = frontier.pop_front() {
             // mark as visited
@@ -57,24 +58,27 @@ impl State {
                     if visited.contains(opt) {
                         continue;
                     }
+                    let &(parent_dist, parent_meepo) = distances.get(&(x, y)).unwrap();
                     match kind {
                         Door(_) => {
                             visited.insert(*opt);
                         }
                         Empty => {
-                            let alt = distances.get(&(x, y)).unwrap() + 1;
-                            if &alt < distances.get(opt).unwrap_or(&u16::max_value()) {
-                                distances.insert(*opt, alt);
+                            let alt = parent_dist + 1;
+                            let (cureent_dist, _) = distances.get(opt).unwrap_or(NO_DISTANCE);
+                            if &alt < cureent_dist {
+                                distances.insert(*opt, (alt, parent_meepo));
                                 if !frontier.contains(opt) {
                                     frontier.push_back(*opt);
                                 }
                             }
                         }
                         Key(_) => {
-                            let alt = distances.get(&(x, y)).unwrap() + 1;
-                            if &alt < distances.get(opt).unwrap_or(&u16::max_value()) {
+                            let alt = parent_dist + 1;
+                            let (cureent_dist, _) = distances.get(opt).unwrap_or(NO_DISTANCE);
+                            if &alt < cureent_dist {
                                 // keys are not collected => can't be expanded
-                                distances.insert(*opt, alt);
+                                distances.insert(*opt, (alt, parent_meepo));
                                 visited.insert(*opt);
                             }
                         }
@@ -83,10 +87,11 @@ impl State {
                 }
             }
         }
+        // leave only distances corresponding to keys
         self.key_dists = distances
             .into_iter()
             .filter(|(pos, _d)| {
-                if pos == &self.me {
+                if self.meepos.contains(&pos) {
                     return false;
                 }
                 if let Key(_) = self.tiles.get(&pos).expect("pos not found in retain") {
@@ -98,14 +103,17 @@ impl State {
             .collect();
     }
 
-    pub fn hash(&self) -> (String, (u16, u16)) {
+    pub fn hash(&self) -> (String, Vec<(u16, u16)>) {
         let mut remaining_keys: Vec<_> = self
             .key_dists
             .iter()
             .map(|(pos, _)| self.tiles.get(pos).unwrap().to_string())
             .collect();
         remaining_keys.sort_unstable();
-        (remaining_keys.into_iter().collect::<String>(), self.me)
+        (
+            remaining_keys.into_iter().collect::<String>(),
+            self.meepos.clone(),
+        )
     }
 
     /// Expand generates all reachable states from this point, with the
@@ -113,10 +121,16 @@ impl State {
     pub fn expand(&self) -> Vec<(State, u16)> {
         self.key_dists
             .iter()
-            .map(|(&key_pos, &dist)| {
+            .map(|(&key_pos, &(dist, meepo))| {
                 let mut new_tiles = self.tiles.clone();
                 new_tiles.insert(key_pos, Me);
-                new_tiles.insert(self.me, Empty);
+                for (i, meepo_pos) in self.meepos.iter().enumerate() {
+                    if i == meepo {
+                        new_tiles.insert(self.meepos[meepo], Empty);
+                    } else {
+                        new_tiles.insert(*meepo_pos, Me);
+                    }
+                }
                 if let Key(k) = self.tiles.get(&key_pos).unwrap() {
                     // open the corresponding door
                     if let Some((&door_pos, _)) = self
@@ -146,7 +160,7 @@ impl fmt::Display for State {
         let rep: String = (0..=max_y + 1)
             .map(|y| {
                 (0..=max_x + 1).fold(String::new(), |acc, x| {
-                    if (y, x) == self.me {
+                    if self.meepos.contains(&(y, x)) {
                         return acc + &Me.to_string();
                     }
                     if let Some(kind) = self.tiles.get(&(y, x)) {
@@ -165,7 +179,7 @@ impl fmt::Debug for State {
         write!(
             f,
             "            State\n{:>11}:{:?}\n{:>11}:{:?}\n{:>11}:{:?}",
-            "Me", self.me, "Distances", self.key_dists, "Tiles", self.tiles
+            "Me", self.meepos, "Distances", self.key_dists, "Tiles", self.tiles
         )
     }
 }
