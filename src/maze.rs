@@ -5,7 +5,7 @@ pub use Tile::*;
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Tile {
     Floor,
-    Portal([char; 2]),
+    Portal([char; 2], bool),
 }
 
 pub type Maze = HashMap<(u16, u16), Tile>;
@@ -17,21 +17,34 @@ pub fn get_maze(path: &str) -> (Maze, (u16, u16)) {
     let mut missing: HashMap<(u16, u16), char> = HashMap::new();
     let mut tiles = HashMap::new();
     let mut last = '%';
+    let mut is_outer;
+    let mut is_void;
 
     // vertical (y)
     for (row, line) in raw.lines().enumerate() {
+        is_outer = true;
+        is_void = false;
         // horizontal (x)
         for (col, c) in line.char_indices() {
             let pos = (col as u16 + 2, row as u16 + 2); // add two to overcome overflows
+            if c == '.' || c == '#' {
+                is_outer = false;
+                if is_void {
+                    is_outer = true;
+                }
+            }
+            if !is_outer && c == ' ' {
+                is_void = true;
+            }
             match c {
                 '.' => {
                     tiles.insert(pos, Floor);
                 }
-                '#' | ' ' => (), // ignore walls and empty space
+                '#' | ' ' => {} // ignore walls and empty space
                 'A'..='Z' => {
                     // find left
                     if last.is_ascii_alphabetic() {
-                        let portal = Portal([last, c]);
+                        let portal = Portal([last, c], is_outer);
                         // Dedice if it connects left or right
                         if let Some(Floor) = tiles.get(&(pos.0 - 2, pos.1)) {
                             tiles.insert((pos.0 - 1, pos.1), portal);
@@ -39,12 +52,12 @@ pub fn get_maze(path: &str) -> (Maze, (u16, u16)) {
                             tiles.insert(pos, portal);
                         }
                     } else if let Some(prev_char) = missing.remove(&(pos.0, pos.1 - 1)) {
-                        let portal = Portal([prev_char, c]);
+                        let portal = Portal([prev_char, c], is_outer);
                         // this is a vertical portal. Now we need to decide if it connects up or down
                         if let Some(Floor) = tiles.get(&(pos.0, pos.1 - 2)) {
                             tiles.insert((pos.0, pos.1 - 1), portal);
                         } else {
-                            tiles.insert(pos, Portal([prev_char, c]));
+                            tiles.insert(pos, Portal([prev_char, c], is_outer));
                         }
                     } else {
                         missing.insert(pos, c);
@@ -58,7 +71,7 @@ pub fn get_maze(path: &str) -> (Maze, (u16, u16)) {
 
     let (&(x0, y0), _) = tiles
         .iter()
-        .find(|(_, &v)| v == Portal(['A', 'A']))
+        .find(|(_, &v)| v == Portal(['A', 'A'], true))
         .expect("portal AA not found");
     for &opt in &[(x0 + 1, y0), (x0 - 1, y0), (x0, y0 + 1), (x0, y0 - 1)] {
         if let Some(k) = tiles.get(&opt) {
@@ -98,7 +111,8 @@ pub fn paint_maze(maze: &Maze, pos: (u16, u16)) {
             } else if let Some(k) = maze.get(&(x, y)) {
                 match k {
                     Floor => row.push('.'),
-                    Portal([_, b]) => row.push(*b),
+                    Portal([_, b], true) => row.push(*b),
+                    Portal([_, b], false) => row.push(b.to_ascii_lowercase()),
                 }
             } else {
                 row.push(' ');

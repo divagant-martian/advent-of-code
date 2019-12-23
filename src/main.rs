@@ -5,7 +5,8 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::env;
 use std::io::Read;
 
-const Z_PORTAL: Tile = Portal(['Z', 'Z']);
+const Z_PORTAL: Tile = Portal(['Z', 'Z'], true);
+
 fn main() {
     let mut args = env::args();
     let path: String = args.nth(1).expect("no data path provided");
@@ -29,6 +30,8 @@ fn dijkstra(maze: Maze, start: (u16, u16)) {
         let (x, y) = me;
         visited.insert(me);
         let &my_dist = distances.get(&me).unwrap();
+
+        // just for debug purposes....
         if false {
             println!("visiting with distance {}", my_dist);
             paint_maze(&maze, me);
@@ -52,13 +55,13 @@ fn dijkstra(maze: Maze, start: (u16, u16)) {
             if let Some(tile) = maze.get(&opt) {
                 // now we need to find out where we end up and how many steps we moved
                 let (real, steps) = match tile {
-                    Portal([_, _]) => {
+                    Portal(auxp, auxb) => {
                         if tile == &Z_PORTAL {
-                            // supose we can stand on the portal like floor
+                            // supose we can stand on the portal like floor, but free
                             target = opt;
                             (opt, 0)
                         } else if let Some((&other, _)) =
-                            maze.iter().find(|(&k, &v)| k != opt && v == *tile)
+                            maze.iter().find(|(_, &v)| v == Portal(*auxp, !auxb))
                         {
                             // find the corresponding portal to this one, if any
                             // entering a portal doesn't add steps
