@@ -100,7 +100,7 @@ pub fn paint_maze(maze: &Maze, pos: (u16, u16)) {
             x_bot += &c;
         }
     }
-    println!("{}", x_top);
+    // println!("{}", x_top);
     for y in 3..=y_max {
         let mut row = String::new();
         let row_i = &(y % 10).to_string();
@@ -122,5 +122,6 @@ pub fn paint_maze(maze: &Maze, pos: (u16, u16)) {
         row += row_i;
         println!("{}", row);
     }
-    println!("{}", x_bot);
+    // println!("{}", x_bot);
+    println!("");
 }

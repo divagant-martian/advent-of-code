@@ -23,13 +23,14 @@ fn dijkstra(maze: Maze, start: (u16, u16)) {
     let mut visited = HashSet::new();
     let mut target = (MAX_DIST, MAX_DIST);
 
-    frontier.push_front(start);
-    distances.insert(start, 0);
+    // where am I in the map and in which recursion level
+    frontier.push_front((start, 0));
+    distances.insert((start, 0), 0);
 
-    while let Some(me) = frontier.pop_front() {
+    while let Some((me, lvl)) = frontier.pop_front() {
         let (x, y) = me;
-        visited.insert(me);
-        let &my_dist = distances.get(&me).unwrap();
+        visited.insert((me, lvl));
+        let &my_dist = distances.get(&(me, lvl)).unwrap();
 
         // just for debug purposes....
         if false {
@@ -47,31 +48,45 @@ fn dijkstra(maze: Maze, start: (u16, u16)) {
             }
         }
         // ending condition
-        if target == me {
+        if target == me && lvl == 0 {
             break;
         }
         for &opt in &[(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)] {
             // check that it is a valid movement
             if let Some(tile) = maze.get(&opt) {
                 // now we need to find out where we end up and how many steps we moved
+                // v2: find which recursion level we get
                 let (real, steps) = match tile {
-                    Portal(auxp, auxb) => {
-                        if tile == &Z_PORTAL {
+                    Portal(auxp, is_outer) => {
+                        if tile == &Z_PORTAL && lvl == 0 {
                             // supose we can stand on the portal like floor, but free
                             target = opt;
-                            (opt, 0)
+                            ((opt, lvl), 0)
                         } else if let Some((&other, _)) =
-                            maze.iter().find(|(_, &v)| v == Portal(*auxp, !auxb))
+                            maze.iter().find(|(_, &v)| v == Portal(*auxp, !is_outer))
                         {
+                            let is_outer = *is_outer;
                             // find the corresponding portal to this one, if any
                             // entering a portal doesn't add steps
-                            (other, 0)
+                            if lvl == 0 {
+                                // only inner portals work on lvl 0
+                                if is_outer {
+                                    ((me, lvl), 0)
+                                } else {
+                                    // is inner
+                                    ((other, lvl + 1), 0)
+                                }
+                            } else if is_outer {
+                                ((other, lvl - 1), 0)
+                            } else {
+                                ((other, lvl + 1), 0)
+                            }
                         } else {
                             // can't enter the portal
-                            (me, 0)
+                            ((me, lvl), 0)
                         }
                     }
-                    Floor => (opt, 1),
+                    Floor => ((opt, lvl), 1),
                 };
 
                 let alt_dist = my_dist + steps;
@@ -84,5 +99,5 @@ fn dijkstra(maze: Maze, start: (u16, u16)) {
             }
         }
     }
-    println!("{:?}", distances.get(&target));
+    println!("{:?}", distances.get(&(target, 0)));
 }
