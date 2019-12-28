@@ -1,6 +1,7 @@
 use crate::channel::{BufReceiver, BufSender};
 use intcode::program::{ProgReceiver, ProgSender};
 use std::collections::HashMap;
+use std::thread;
 
 pub struct Router {
     output_receivers: HashMap<usize, BufReceiver>,
@@ -27,17 +28,44 @@ impl Router {
     }
 
     pub fn start(&mut self) {
+        let mut last = None;
+        let mut last_y_sent = None;
+        let mut queue_had_stuff = false;
         loop {
+            thread::sleep_ms(60); // let them sync
+            queue_had_stuff = false;
             for (sender, out) in self.output_receivers.iter_mut() {
-                if let Some(address) = out.get() {
+                // exhaust the queues
+                while let Some(address) = out.get() {
+                    queue_had_stuff = true;
                     let address = address as usize;
                     let x = out.get().unwrap();
                     let y = out.get().unwrap();
                     let p = vec![x, y];
-                    println!("address {} sent {},{} to {}", sender, x, y, address);
+                    if address == 255 {
+                        // intercept the packages
+                        last = Some((x, y));
+                        continue;
+                    }
                     let dest = self.input_senders.get_mut(&address).unwrap();
                     dest.put(x);
                     dest.put(y);
+                }
+            }
+            if !queue_had_stuff {
+                if let Some((x, y)) = last {
+                    // println!("idle, sending: y={}", y);
+                    let dest = self.input_senders.get_mut(&0).unwrap();
+                    dest.put(x);
+                    dest.put(y);
+                    if let Some(ly) = last_y_sent {
+                        if ly == y {
+                            println!("last y sent is same as now: {}", y);
+                            // abrutly stop the router
+                            break;
+                        }
+                    }
+                    last_y_sent = Some(y);
                 }
             }
         }

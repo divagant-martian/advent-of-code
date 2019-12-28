@@ -29,7 +29,8 @@ fn main() {
         let mut router = router::Router::new(cats, out_size, in_size);
         router.start();
     });
-    // create the computers pluging the other end of the cables
+
+    // create the computers by pluging the other end of the cables
     let data = get_data_from_path("data/input.txt");
     let mut handles = vec![];
     for (i_r, o_s) in peripherals {

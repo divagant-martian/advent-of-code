@@ -36,6 +36,9 @@ impl BufSender {
         assert_eq!(p.len() == self.n, true);
         self.s.send(p).unwrap();
     }
+    pub fn len(&self) -> usize {
+        self.q.len()
+    }
 }
 
 #[derive(Debug)]
@@ -75,6 +78,9 @@ impl BufReceiver {
             address: Some(address),
             on_empty,
         }
+    }
+    pub fn len(&self) -> usize {
+        self.q.len()
     }
 }
 
