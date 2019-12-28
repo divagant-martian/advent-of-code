@@ -1,5 +1,6 @@
 use crate::opcode::*;
 use colored::*;
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::io;
 use std::io::Write;
@@ -8,6 +9,7 @@ pub type Int = i64;
 
 pub struct Program<S: ProgSender, R: ProgReceiver> {
     mem: Vec<Int>,
+    aux_mem: HashMap<usize, Int>, // holds whatever does not fit in mem
     pointer: usize,
     input: R,
     output: S,
@@ -25,13 +27,13 @@ pub trait ProgReceiver: Debug {
 impl<S: ProgSender, R: ProgReceiver> Program<S, R> {
     pub fn new(data: &Vec<Int>, input: R, output: S) -> Self {
         let mut mem = data.clone();
-        mem.resize_with(2048, Default::default);
         Program {
             mem,
             pointer: 0,
             input,
             output,
             rel_base: 0,
+            aux_mem: HashMap::new(),
         }
     }
     /// Dispatchs the corresponding operation and returns the new pointer
@@ -50,8 +52,24 @@ impl<S: ProgSender, R: ProgReceiver> Program<S, R> {
         }
     }
 
+    fn read(&self, p: usize) -> Int {
+        if p < self.mem.len() {
+            self.mem[p]
+        } else {
+            *self.aux_mem.get(&p).unwrap_or(&0)
+        }
+    }
+
+    fn write(&mut self, p: usize, val: Int) {
+        if p < self.mem.len() {
+            self.mem[p] = val;
+        } else {
+            self.aux_mem.insert(p, val);
+        }
+    }
+
     fn get_relative_position(&self, offset_wrt_pointer: usize, m: Mode) -> usize {
-        let literal_num = self.mem[self.pointer + offset_wrt_pointer];
+        let literal_num = self.read(self.pointer + offset_wrt_pointer);
         match m {
             Mode::Inmediate => panic!("Inmediate mode in output arg WTF"),
             Mode::Position => literal_num as usize,
@@ -61,13 +79,15 @@ impl<S: ProgSender, R: ProgReceiver> Program<S, R> {
 
     fn add(&mut self, m0: Mode, m1: Mode, m2: Mode) {
         let p = self.get_relative_position(3, m2);
-        self.mem[p] = self.get_param(1, m0) + self.get_param(2, m1);
+        let val = self.get_param(1, m0) + self.get_param(2, m1);
+        self.write(p, val);
         self.pointer += 4;
     }
 
     fn multiply(&mut self, m0: Mode, m1: Mode, m2: Mode) {
         let p = self.get_relative_position(3, m2);
-        self.mem[p] = self.get_param(1, m0) * self.get_param(2, m1);
+        let val = self.get_param(1, m0) * self.get_param(2, m1);
+        self.write(p, val);
         self.pointer += 4;
     }
 
@@ -87,22 +107,24 @@ impl<S: ProgSender, R: ProgReceiver> Program<S, R> {
 
     fn less_than(&mut self, m0: Mode, m1: Mode, m2: Mode) {
         let p = self.get_relative_position(3, m2);
-        self.mem[p] = (self.get_param(1, m0) < self.get_param(2, m1)) as Int;
+        let val = (self.get_param(1, m0) < self.get_param(2, m1)) as Int;
+        self.write(p, val);
         self.pointer += 4;
     }
 
     fn equals(&mut self, m0: Mode, m1: Mode, m2: Mode) {
         let p = self.get_relative_position(3, m2);
-        self.mem[p] = (self.get_param(1, m0) == self.get_param(2, m1)) as Int;
+        let val = (self.get_param(1, m0) == self.get_param(2, m1)) as Int;
+        self.write(p, val);
         self.pointer += 4;
     }
 
     fn set_rel_base(&mut self, m0: Mode) {
-        let literal_num = self.mem[self.pointer + 1];
+        let literal_num = self.read(self.pointer + 1);
         self.rel_base += match m0 {
             Mode::Inmediate => literal_num,
-            Mode::Position => self.mem[literal_num as usize],
-            Mode::Relative => self.mem[(self.rel_base + literal_num) as usize],
+            Mode::Position => self.read(literal_num as usize),
+            Mode::Relative => self.read((self.rel_base + literal_num) as usize),
         };
         self.pointer += 2;
     }
@@ -125,7 +147,7 @@ impl<S: ProgSender, R: ProgReceiver> Program<S, R> {
             }
         };
         let p = self.get_relative_position(1, m0);
-        self.mem[p] = n;
+        self.write(p, n);
         self.pointer += 2;
     }
 
@@ -138,11 +160,11 @@ impl<S: ProgSender, R: ProgReceiver> Program<S, R> {
     fn halt(&mut self) {}
 
     fn get_param(&mut self, position: usize, inmediate_mode: Mode) -> Int {
-        let literal_num = self.mem[self.pointer + position];
+        let literal_num = self.read(self.pointer + position);
         match inmediate_mode {
             Mode::Inmediate => literal_num,
-            Mode::Position => self.mem[literal_num as usize],
-            Mode::Relative => self.mem[(self.rel_base + literal_num) as usize],
+            Mode::Position => self.read(literal_num as usize),
+            Mode::Relative => self.read((self.rel_base + literal_num) as usize),
         }
     }
 
@@ -232,7 +254,7 @@ impl<S: ProgSender, R: ProgReceiver> Program<S, R> {
         let mut old_pointer;
         while {
             old_pointer = self.pointer;
-            op = from_num(self.mem[self.pointer]);
+            op = from_num(self.read(self.pointer));
             self.execute(op);
             old_pointer != self.pointer
         } {}
