@@ -2,67 +2,47 @@ mod channel;
 mod router;
 
 use intcode::get_data_from_path;
-use intcode::program::{ProgReceiver, ProgSender};
+use intcode::program::{Int, ProgReceiver, ProgSender, Program};
 use std::thread;
 
 fn main() {
-    let in_size = 2;
-    let out_size = 3;
-    let default_in = Some(888);
-    let default_out = None;
-    // computer 1
-    let (mut in_s_1, mut in_r_1) = channel::buf_channel(1, in_size, default_in);
-    let (mut out_s_1, mut out_r_1) = channel::buf_channel(1, out_size, default_out);
+    const in_size: usize = 2;
+    const out_size: usize = 3;
+    const default_in: Option<Int> = Some(-1);
+    const default_out: Option<Int> = None;
+    const n_comp: usize = 50;
 
-    // computer 2
-    let (mut in_s_2, mut in_r_2) = channel::buf_channel(2, in_size, default_in);
-    let (mut out_s_2, mut out_r_2) = channel::buf_channel(2, out_size, default_out);
+    // create the cables
+    let mut cats = vec![]; // pairs of in_sender, out_receiver
+    let mut peripherals = vec![];
 
-    // computer 3
-    let (mut in_s_3, mut in_r_3) = channel::buf_channel(8, in_size, default_in);
-    let (mut out_s_3, mut out_r_3) = channel::buf_channel(8, out_size, default_out);
+    for id in 0..n_comp {
+        let id = id as Int;
+        let (mut i_s, mut i_r) = channel::buf_channel(id, in_size, default_in);
+        let (mut o_s, mut o_r) = channel::buf_channel(id, out_size, default_out);
+        cats.push((i_s, o_r));
+        peripherals.push((i_r, o_s));
+    }
 
-    // send some messages
-    out_s_1.put_package(vec![8, 1, 8]); // 1 sends (1,3) to 3
-    out_s_2.put_package(vec![2, 2, 2]); // 2 sends (2,2) to 2
-    out_s_3.put_package(vec![2, 8, 2]); // 3 sends (3,2) to 2
-
-    // create the router
+    // create the router by pluging the cables
     thread::spawn(move || {
-        let channels = vec![
-            (in_s_1, out_r_1), // computer 1
-            (in_s_2, out_r_2), // computer 2
-            (in_s_3, out_r_3), // computer 3
-        ];
-
-        let mut router = router::Router::new(channels, out_size, in_size);
+        let mut router = router::Router::new(cats, out_size, in_size);
         router.start();
     });
+    // create the computers pluging the other end of the cables
+    let data = get_data_from_path("data/input.txt");
+    let mut handles = vec![];
+    for (i_r, o_s) in peripherals {
+        let mut prog = Program::new(&data, i_r, o_s);
+        let h = thread::spawn(move || {
+            prog.run();
+        });
+        handles.push(h);
+    }
 
-    thread::sleep_ms(1000);
-
+    // wait for all the computers to finish (do they?)
+    for h in handles {
+        h.join().unwrap();
+    }
     // receive the messages
-    println!("1 received {:?}", in_r_1.get());
-    println!("1 received {:?}", in_r_1.get());
-    println!("1 received {:?}", in_r_1.get());
-    println!("1 received {:?}", in_r_1.get());
-    println!("1 received {:?}", in_r_1.get());
-    println!("1 received {:?}", in_r_1.get());
-    println!("1 received {:?}", in_r_1.get());
-
-    println!("2 received {:?}", in_r_2.get());
-    println!("2 received {:?}", in_r_2.get());
-    println!("2 received {:?}", in_r_2.get());
-    println!("2 received {:?}", in_r_2.get());
-    println!("2 received {:?}", in_r_2.get());
-    println!("2 received {:?}", in_r_2.get());
-    println!("2 received {:?}", in_r_2.get());
-
-    println!("3 received {:?}", in_r_3.get());
-    println!("3 received {:?}", in_r_3.get());
-    println!("3 received {:?}", in_r_3.get());
-    println!("3 received {:?}", in_r_3.get());
-    println!("3 received {:?}", in_r_3.get());
-    println!("3 received {:?}", in_r_3.get());
-    println!("3 received {:?}", in_r_3.get());
 }
