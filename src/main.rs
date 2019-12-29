@@ -23,48 +23,47 @@ fn positions_to_check_other_levels(
     let mut check = vec![];
     match pos {
         (1, 1) => {
-            check.push((level + 1, inner_up));
-            check.push((level + 1, inner_left));
+            check.push((level - 1, inner_up));
+            check.push((level - 1, inner_left));
         }
         (5, 1) => {
-            check.push((level + 1, inner_up));
-            check.push((level + 1, inner_right));
+            check.push((level - 1, inner_up));
+            check.push((level - 1, inner_right));
         }
         (1, 5) => {
-            check.push((level + 1, inner_left));
-            check.push((level + 1, inner_down));
+            check.push((level - 1, inner_left));
+            check.push((level - 1, inner_down));
         }
         (5, 5) => {
-            check.push((level + 1, inner_right));
-            check.push((level + 1, inner_down));
+            check.push((level - 1, inner_right));
+            check.push((level - 1, inner_down));
         }
-        pos if outer_left.contains(pos) => check.push((level + 1, inner_left)),
-        pos if outer_right.contains(pos) => check.push((level + 1, inner_right)),
-        pos if outer_up.contains(pos) => check.push((level + 1, inner_up)),
-        pos if outer_down.contains(pos) => check.push((level + 1, inner_down)),
+        pos if outer_left.contains(pos) => check.push((level - 1, inner_left)),
+        pos if outer_right.contains(pos) => check.push((level - 1, inner_right)),
+        pos if outer_up.contains(pos) => check.push((level - 1, inner_up)),
+        pos if outer_down.contains(pos) => check.push((level - 1, inner_down)),
         pos if pos == &inner_up => {
             for o in outer_up {
-                check.push((level - 1, o));
+                check.push((level + 1, o));
             }
         }
         pos if pos == &inner_right => {
             for o in outer_right {
-                check.push((level - 1, o));
+                check.push((level + 1, o));
             }
         }
         pos if pos == &inner_left => {
             for o in outer_left {
-                check.push((level - 1, o));
+                check.push((level + 1, o));
             }
         }
         pos if pos == &inner_down => {
             for o in outer_down {
-                check.push((level - 1, o));
+                check.push((level + 1, o));
             }
         }
         _ => (),
     }
-    println!("[{}][{:?}] checks {:?}", level, pos, check);
     check
 }
 
@@ -73,9 +72,6 @@ fn near_bugs_rec(board: &RecursiveBoard, pos: &(usize, usize), level: isize) -> 
     if let Some(current_lvl) = board.get(&level) {
         bugs += part_1::near_bugs(&current_lvl, pos);
     }
-    if pos == &(2, 2) && level == 1 {
-        println!("bugs from my level: {}", bugs);
-    }
     let check = positions_to_check_other_levels(pos, level);
     for (l, p) in check {
         if let Some(other_lvl) = board.get(&l) {
@@ -83,9 +79,6 @@ fn near_bugs_rec(board: &RecursiveBoard, pos: &(usize, usize), level: isize) -> 
                 bugs += 1;
             }
         }
-    }
-    if pos == &(2, 2) && level == 1 {
-        println!("bugs using other levels: {}", bugs);
     }
     bugs
 }
@@ -147,27 +140,25 @@ fn paint_board_rec(board: &RecursiveBoard) {
 }
 
 fn part2() {
-    //     let rep = "\
-    // #..##
-    // #.#..
-    // #...#
-    // ##..#
-    // #..##\
-    // ";
     let rep = "\
-....#
-#..#.
-#.?##
-..#..
-#....\
+#..##
+#.#..
+#...#
+##..#
+#..##\
 ";
     let mut board = parse_board_rec(rep);
     paint_board_rec(&board);
     println!("evolved----------------------");
-    for _ in 0..10 {
+    for _ in 0..200 {
         board = evolve_rec(&board);
     }
-    paint_board_rec(&board);
+    // paint_board_rec(&board);
+    let nbugs = board
+        .into_iter()
+        .map(|(_, b)| b.into_iter().map(|(_, v)| v as usize).sum::<usize>())
+        .sum::<usize>();
+    println!("found {} bugs", nbugs);
 }
 
 fn main() {
