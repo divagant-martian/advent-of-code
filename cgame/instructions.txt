@@ -1,0 +1,31 @@
+south
+take hologram
+north
+west
+take mutex
+south
+south
+east
+take weather machine
+west
+south
+take polygon
+north
+north
+north
+east
+north
+north
+north
+take semiconductor
+east
+take prime number
+west
+west
+take monolith
+east
+south
+west
+north
+take jam
+west
