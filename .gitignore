@@ -1,0 +1,9 @@
+target/
+**/*.rs.bk
+*.pk
+*.sk
+*.raw_keypairs
+flamegraph.svg
+perf.data*
+*.tar.gz
+/bin
