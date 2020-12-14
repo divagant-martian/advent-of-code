@@ -99,55 +99,48 @@ fn get_instruction_set_b(filename: &'static str) -> Vec<InsB> /* instruction vec
     inst
 }
 
-fn generate_masks(x_positions: &[u8], output: &mut Vec<(u64, u64)>) {
+fn generate_masks(x_positions: &[u8], output: &mut Vec<u64>, cinta: &mut u64) {
     output.clear();
-    println!("positions: {:?}", x_positions);
-    let mut cinta = 0;
+    *cinta = 0;
     for pos in x_positions {
-        cinta += 2_u64.pow((*pos).into());
+        *cinta += 2_u64.pow((*pos).into());
     }
-    // cinta = !cinta & MAX_VAL;
-    println!("cinta: {:036b}", cinta);
+    *cinta = !*cinta & MAX_VAL;
     for pos in x_positions {
         let one_n = 2_u64.pow((*pos).into());
         if output.is_empty() {
-            output.push((0, !cinta & MAX_VAL));
-            output.push((one_n, !(cinta & !one_n) & MAX_VAL));
+            output.push(0);
+            output.push(one_n);
         } else {
-            for (one_m, _zero_m) in output.clone() {
+            for one_m in output.clone() {
                 let new_one = one_m | one_n;
-                let new_zero = !(cinta & !new_one) & MAX_VAL;
-                output.push((new_one, new_zero))
+                output.push(new_one)
             }
         }
     }
-    for (new_one, new_zero) in output {
-        println!("mask one: {:036b}, zero: {:036b}", new_one, new_zero);
-    }
-    println!()
 }
 
 fn part_b(filename: &'static str) {
     let inst = get_instruction_set_b(filename);
     let mut masks = Vec::with_capacity(2_usize.pow(9));
     let mut one_mask = 0;
+    let mut cinta = 0;
     let mut mem = HashMap::new();
     for instruction in inst {
         match instruction {
             InsB::Update { pos, val } => {
-                for (one_m, zero_m) in &masks {
+                for one_m in &masks {
+                    let zero_m = cinta | (one_m & MAX_VAL);
                     let masked = pos & zero_m | one_m | one_mask;
-                    println!("addr:[{:03}]{:036b} val:{}", masked, masked, val);
                     mem.insert(masked, val);
                 }
-                println!();
             }
             InsB::Mask {
                 one_mask: new_one,
                 x_mask,
             } => {
                 one_mask = new_one;
-                generate_masks(&x_mask, &mut masks);
+                generate_masks(&x_mask, &mut masks, &mut cinta);
             }
         }
     }
@@ -156,9 +149,7 @@ fn part_b(filename: &'static str) {
 }
 
 fn main() {
-    let data = "data/input1.txt";
+    let data = "data/chris.txt";
     part_a(data);
-    // part_b("data/test2.txt");
-
     part_b(data);
 }
