@@ -1,0 +1,514 @@
+Rule And([8, 11]) applied in '' - 'aaaaabbaabaaaaababaa'
+  Rule Or([42, 8], [42]) applied in '' - 'aaaaabbaabaaaaababaa'
+    Rule And([42, 8]) applied in '' - 'aaaaabbaabaaaaababaa'
+      Rule Or([9, 14], [10, 1]) applied in '' - 'aaaaabbaabaaaaababaa'
+        Rule And([9, 14]) applied in '' - 'aaaaabbaabaaaaababaa'
+          Rule Or([14, 27], [1, 26]) applied in '' - 'aaaaabbaabaaaaababaa'
+            Rule And([14, 27]) applied in '' - 'aaaaabbaabaaaaababaa'
+              Rule Terminal('b') applied in '' - 'aaaaabbaabaaaaababaa'
+              [false] rule Terminal('b')
+            Rule And([1, 26]) applied in '' - 'aaaaabbaabaaaaababaa'
+              Rule Terminal('a') applied in '' - 'aaaaabbaabaaaaababaa'
+              Rule Or([14, 22], [1, 20]) applied in 'a' - 'aaaabbaabaaaaababaa'
+                Rule And([14, 22]) applied in 'a' - 'aaaabbaabaaaaababaa'
+                  Rule Terminal('b') applied in 'a' - 'aaaabbaabaaaaababaa'
+                  [false] rule Terminal('b')
+                Rule And([1, 20]) applied in 'a' - 'aaaabbaabaaaaababaa'
+                  Rule Terminal('a') applied in 'a' - 'aaaabbaabaaaaababaa'
+                  Rule Or([14, 14], [1, 15]) applied in 'aa' - 'aaabbaabaaaaababaa'
+                    Rule And([14, 14]) applied in 'aa' - 'aaabbaabaaaaababaa'
+                      Rule Terminal('b') applied in 'aa' - 'aaabbaabaaaaababaa'
+                      [false] rule Terminal('b')
+                    Rule And([1, 15]) applied in 'aa' - 'aaabbaabaaaaababaa'
+                      Rule Terminal('a') applied in 'aa' - 'aaabbaabaaaaababaa'
+                      Rule Or([1], [14]) applied in 'aaa' - 'aabbaabaaaaababaa'
+                        Rule And([1]) applied in 'aaa' - 'aabbaabaaaaababaa'
+                          Rule Terminal('a') applied in 'aaa' - 'aabbaabaaaaababaa'
+                        [true] rule And([1])
+                      [true] rule Or([1], [14])
+                    [true] rule And([1, 15])
+                  [true] rule Or([14, 14], [1, 15])
+                [true] rule And([1, 20])
+              [true] rule Or([14, 22], [1, 20])
+            [true] rule And([1, 26])
+          [true] rule Or([14, 27], [1, 26])
+          Rule Terminal('b') applied in 'aaaa' - 'abbaabaaaaababaa'
+          [false] rule Terminal('b')
+        Rule And([10, 1]) applied in '' - 'aaaaabbaabaaaaababaa'
+          Rule Or([23, 14], [28, 1]) applied in '' - 'aaaaabbaabaaaaababaa'
+            Rule And([23, 14]) applied in '' - 'aaaaabbaabaaaaababaa'
+              Rule Or([25, 1], [22, 14]) applied in '' - 'aaaaabbaabaaaaababaa'
+                Rule And([25, 1]) applied in '' - 'aaaaabbaabaaaaababaa'
+                  Rule Or([1, 1], [1, 14]) applied in '' - 'aaaaabbaabaaaaababaa'
+                    Rule And([1, 1]) applied in '' - 'aaaaabbaabaaaaababaa'
+                      Rule Terminal('a') applied in '' - 'aaaaabbaabaaaaababaa'
+                      Rule Terminal('a') applied in 'a' - 'aaaabbaabaaaaababaa'
+                    [true] rule And([1, 1])
+                  [true] rule Or([1, 1], [1, 14])
+                  Rule Terminal('a') applied in 'aa' - 'aaabbaabaaaaababaa'
+                [true] rule And([25, 1])
+              [true] rule Or([25, 1], [22, 14])
+              Rule Terminal('b') applied in 'aaa' - 'aabbaabaaaaababaa'
+              [false] rule Terminal('b')
+            Rule And([28, 1]) applied in '' - 'aaaaabbaabaaaaababaa'
+              Rule And([16, 1]) applied in '' - 'aaaaabbaabaaaaababaa'
+                Rule Or([15, 1], [14, 14]) applied in '' - 'aaaaabbaabaaaaababaa'
+                  Rule And([15, 1]) applied in '' - 'aaaaabbaabaaaaababaa'
+                    Rule Or([1], [14]) applied in '' - 'aaaaabbaabaaaaababaa'
+                      Rule And([1]) applied in '' - 'aaaaabbaabaaaaababaa'
+                        Rule Terminal('a') applied in '' - 'aaaaabbaabaaaaababaa'
+                      [true] rule And([1])
+                    [true] rule Or([1], [14])
+                    Rule Terminal('a') applied in 'a' - 'aaaabbaabaaaaababaa'
+                  [true] rule And([15, 1])
+                [true] rule Or([15, 1], [14, 14])
+                Rule Terminal('a') applied in 'aa' - 'aaabbaabaaaaababaa'
+              [true] rule And([16, 1])
+              Rule Terminal('a') applied in 'aaa' - 'aabbaabaaaaababaa'
+            [true] rule And([28, 1])
+          [true] rule Or([23, 14], [28, 1])
+          Rule Terminal('a') applied in 'aaaa' - 'abbaabaaaaababaa'
+        [true] rule And([10, 1])
+      [true] rule Or([9, 14], [10, 1])
+      Rule Or([42, 8], [42]) applied in 'aaaaa' - 'bbaabaaaaababaa'
+        Rule And([42, 8]) applied in 'aaaaa' - 'bbaabaaaaababaa'
+          Rule Or([9, 14], [10, 1]) applied in 'aaaaa' - 'bbaabaaaaababaa'
+            Rule And([9, 14]) applied in 'aaaaa' - 'bbaabaaaaababaa'
+              Rule Or([14, 27], [1, 26]) applied in 'aaaaa' - 'bbaabaaaaababaa'
+                Rule And([14, 27]) applied in 'aaaaa' - 'bbaabaaaaababaa'
+                  Rule Terminal('b') applied in 'aaaaa' - 'bbaabaaaaababaa'
+                  Rule Or([1, 6], [14, 18]) applied in 'aaaaab' - 'baabaaaaababaa'
+                    Rule And([1, 6]) applied in 'aaaaab' - 'baabaaaaababaa'
+                      Rule Terminal('a') applied in 'aaaaab' - 'baabaaaaababaa'
+                      [false] rule Terminal('a')
+                    Rule And([14, 18]) applied in 'aaaaab' - 'baabaaaaababaa'
+                      Rule Terminal('b') applied in 'aaaaab' - 'baabaaaaababaa'
+                      Rule And([15, 15]) applied in 'aaaaabb' - 'aabaaaaababaa'
+                        Rule Or([1], [14]) applied in 'aaaaabb' - 'aabaaaaababaa'
+                          Rule And([1]) applied in 'aaaaabb' - 'aabaaaaababaa'
+                            Rule Terminal('a') applied in 'aaaaabb' - 'aabaaaaababaa'
+                          [true] rule And([1])
+                        [true] rule Or([1], [14])
+                        Rule Or([1], [14]) applied in 'aaaaabba' - 'abaaaaababaa'
+                          Rule And([1]) applied in 'aaaaabba' - 'abaaaaababaa'
+                            Rule Terminal('a') applied in 'aaaaabba' - 'abaaaaababaa'
+                          [true] rule And([1])
+                        [true] rule Or([1], [14])
+                      [true] rule And([15, 15])
+                    [true] rule And([14, 18])
+                  [true] rule Or([1, 6], [14, 18])
+                [true] rule And([14, 27])
+              [true] rule Or([14, 27], [1, 26])
+              Rule Terminal('b') applied in 'aaaaabbaa' - 'baaaaababaa'
+            [true] rule And([9, 14])
+          [true] rule Or([9, 14], [10, 1])
+          Rule Or([42, 8], [42]) applied in 'aaaaabbaab' - 'aaaaababaa'
+            Rule And([42, 8]) applied in 'aaaaabbaab' - 'aaaaababaa'
+              Rule Or([9, 14], [10, 1]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                Rule And([9, 14]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                  Rule Or([14, 27], [1, 26]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                    Rule And([14, 27]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                      Rule Terminal('b') applied in 'aaaaabbaab' - 'aaaaababaa'
+                      [false] rule Terminal('b')
+                    Rule And([1, 26]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                      Rule Terminal('a') applied in 'aaaaabbaab' - 'aaaaababaa'
+                      Rule Or([14, 22], [1, 20]) applied in 'aaaaabbaaba' - 'aaaababaa'
+                        Rule And([14, 22]) applied in 'aaaaabbaaba' - 'aaaababaa'
+                          Rule Terminal('b') applied in 'aaaaabbaaba' - 'aaaababaa'
+                          [false] rule Terminal('b')
+                        Rule And([1, 20]) applied in 'aaaaabbaaba' - 'aaaababaa'
+                          Rule Terminal('a') applied in 'aaaaabbaaba' - 'aaaababaa'
+                          Rule Or([14, 14], [1, 15]) applied in 'aaaaabbaabaa' - 'aaababaa'
+                            Rule And([14, 14]) applied in 'aaaaabbaabaa' - 'aaababaa'
+                              Rule Terminal('b') applied in 'aaaaabbaabaa' - 'aaababaa'
+                              [false] rule Terminal('b')
+                            Rule And([1, 15]) applied in 'aaaaabbaabaa' - 'aaababaa'
+                              Rule Terminal('a') applied in 'aaaaabbaabaa' - 'aaababaa'
+                              Rule Or([1], [14]) applied in 'aaaaabbaabaaa' - 'aababaa'
+                                Rule And([1]) applied in 'aaaaabbaabaaa' - 'aababaa'
+                                  Rule Terminal('a') applied in 'aaaaabbaabaaa' - 'aababaa'
+                                [true] rule And([1])
+                              [true] rule Or([1], [14])
+                            [true] rule And([1, 15])
+                          [true] rule Or([14, 14], [1, 15])
+                        [true] rule And([1, 20])
+                      [true] rule Or([14, 22], [1, 20])
+                    [true] rule And([1, 26])
+                  [true] rule Or([14, 27], [1, 26])
+                  Rule Terminal('b') applied in 'aaaaabbaabaaaa' - 'ababaa'
+                  [false] rule Terminal('b')
+                Rule And([10, 1]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                  Rule Or([23, 14], [28, 1]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                    Rule And([23, 14]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                      Rule Or([25, 1], [22, 14]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                        Rule And([25, 1]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                          Rule Or([1, 1], [1, 14]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                            Rule And([1, 1]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                              Rule Terminal('a') applied in 'aaaaabbaab' - 'aaaaababaa'
+                              Rule Terminal('a') applied in 'aaaaabbaaba' - 'aaaababaa'
+                            [true] rule And([1, 1])
+                          [true] rule Or([1, 1], [1, 14])
+                          Rule Terminal('a') applied in 'aaaaabbaabaa' - 'aaababaa'
+                        [true] rule And([25, 1])
+                      [true] rule Or([25, 1], [22, 14])
+                      Rule Terminal('b') applied in 'aaaaabbaabaaa' - 'aababaa'
+                      [false] rule Terminal('b')
+                    Rule And([28, 1]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                      Rule And([16, 1]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                        Rule Or([15, 1], [14, 14]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                          Rule And([15, 1]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                            Rule Or([1], [14]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                              Rule And([1]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                                Rule Terminal('a') applied in 'aaaaabbaab' - 'aaaaababaa'
+                              [true] rule And([1])
+                            [true] rule Or([1], [14])
+                            Rule Terminal('a') applied in 'aaaaabbaaba' - 'aaaababaa'
+                          [true] rule And([15, 1])
+                        [true] rule Or([15, 1], [14, 14])
+                        Rule Terminal('a') applied in 'aaaaabbaabaa' - 'aaababaa'
+                      [true] rule And([16, 1])
+                      Rule Terminal('a') applied in 'aaaaabbaabaaa' - 'aababaa'
+                    [true] rule And([28, 1])
+                  [true] rule Or([23, 14], [28, 1])
+                  Rule Terminal('a') applied in 'aaaaabbaabaaaa' - 'ababaa'
+                [true] rule And([10, 1])
+              [true] rule Or([9, 14], [10, 1])
+              Rule Or([42, 8], [42]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                Rule And([42, 8]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                  Rule Or([9, 14], [10, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                    Rule And([9, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                      Rule Or([14, 27], [1, 26]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                        Rule And([14, 27]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                          Rule Terminal('b') applied in 'aaaaabbaabaaaaa' - 'babaa'
+                          Rule Or([1, 6], [14, 18]) applied in 'aaaaabbaabaaaaab' - 'abaa'
+                            Rule And([1, 6]) applied in 'aaaaabbaabaaaaab' - 'abaa'
+                              Rule Terminal('a') applied in 'aaaaabbaabaaaaab' - 'abaa'
+                              Rule Or([14, 14], [1, 14]) applied in 'aaaaabbaabaaaaaba' - 'baa'
+                                Rule And([14, 14]) applied in 'aaaaabbaabaaaaaba' - 'baa'
+                                  Rule Terminal('b') applied in 'aaaaabbaabaaaaaba' - 'baa'
+                                  Rule Terminal('b') applied in 'aaaaabbaabaaaaabab' - 'aa'
+                                  [false] rule Terminal('b')
+                                Rule And([1, 14]) applied in 'aaaaabbaabaaaaaba' - 'baa'
+                                  Rule Terminal('a') applied in 'aaaaabbaabaaaaaba' - 'baa'
+                                  [false] rule Terminal('a')
+                              [false] rule Or([14, 14], [1, 14])
+                            Rule And([14, 18]) applied in 'aaaaabbaabaaaaab' - 'abaa'
+                              Rule Terminal('b') applied in 'aaaaabbaabaaaaab' - 'abaa'
+                              [false] rule Terminal('b')
+                          [false] rule Or([1, 6], [14, 18])
+                        Rule And([1, 26]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                          Rule Terminal('a') applied in 'aaaaabbaabaaaaa' - 'babaa'
+                          [false] rule Terminal('a')
+                      [false] rule Or([14, 27], [1, 26])
+                    Rule And([10, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                      Rule Or([23, 14], [28, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                        Rule And([23, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                          Rule Or([25, 1], [22, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                            Rule And([25, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                              Rule Or([1, 1], [1, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                                Rule And([1, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                                  Rule Terminal('a') applied in 'aaaaabbaabaaaaa' - 'babaa'
+                                  [false] rule Terminal('a')
+                                Rule And([1, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                                  Rule Terminal('a') applied in 'aaaaabbaabaaaaa' - 'babaa'
+                                  [false] rule Terminal('a')
+                              [false] rule Or([1, 1], [1, 14])
+                            Rule And([22, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                              Rule And([14, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                                Rule Terminal('b') applied in 'aaaaabbaabaaaaa' - 'babaa'
+                                Rule Terminal('b') applied in 'aaaaabbaabaaaaab' - 'abaa'
+                                [false] rule Terminal('b')
+                          [false] rule Or([25, 1], [22, 14])
+                        Rule And([28, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                          Rule And([16, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                            Rule Or([15, 1], [14, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                              Rule And([15, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                                Rule Or([1], [14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                                  Rule And([1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                                    Rule Terminal('a') applied in 'aaaaabbaabaaaaa' - 'babaa'
+                                    [false] rule Terminal('a')
+                                  Rule And([14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                                    Rule Terminal('b') applied in 'aaaaabbaabaaaaa' - 'babaa'
+                                  [true] rule And([14])
+                                [true] rule Or([1], [14])
+                                Rule Terminal('a') applied in 'aaaaabbaabaaaaab' - 'abaa'
+                              [true] rule And([15, 1])
+                            [true] rule Or([15, 1], [14, 14])
+                            Rule Terminal('a') applied in 'aaaaabbaabaaaaaba' - 'baa'
+                            [false] rule Terminal('a')
+                      [false] rule Or([23, 14], [28, 1])
+                  [false] rule Or([9, 14], [10, 1])
+                Rule And([42]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                  Rule Or([9, 14], [10, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                    Rule And([9, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                      Rule Or([14, 27], [1, 26]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                        Rule And([14, 27]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                          Rule Terminal('b') applied in 'aaaaabbaabaaaaa' - 'babaa'
+                          Rule Or([1, 6], [14, 18]) applied in 'aaaaabbaabaaaaab' - 'abaa'
+                            Rule And([1, 6]) applied in 'aaaaabbaabaaaaab' - 'abaa'
+                              Rule Terminal('a') applied in 'aaaaabbaabaaaaab' - 'abaa'
+                              Rule Or([14, 14], [1, 14]) applied in 'aaaaabbaabaaaaaba' - 'baa'
+                                Rule And([14, 14]) applied in 'aaaaabbaabaaaaaba' - 'baa'
+                                  Rule Terminal('b') applied in 'aaaaabbaabaaaaaba' - 'baa'
+                                  Rule Terminal('b') applied in 'aaaaabbaabaaaaabab' - 'aa'
+                                  [false] rule Terminal('b')
+                                Rule And([1, 14]) applied in 'aaaaabbaabaaaaaba' - 'baa'
+                                  Rule Terminal('a') applied in 'aaaaabbaabaaaaaba' - 'baa'
+                                  [false] rule Terminal('a')
+                              [false] rule Or([14, 14], [1, 14])
+                            Rule And([14, 18]) applied in 'aaaaabbaabaaaaab' - 'abaa'
+                              Rule Terminal('b') applied in 'aaaaabbaabaaaaab' - 'abaa'
+                              [false] rule Terminal('b')
+                          [false] rule Or([1, 6], [14, 18])
+                        Rule And([1, 26]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                          Rule Terminal('a') applied in 'aaaaabbaabaaaaa' - 'babaa'
+                          [false] rule Terminal('a')
+                      [false] rule Or([14, 27], [1, 26])
+                    Rule And([10, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                      Rule Or([23, 14], [28, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                        Rule And([23, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                          Rule Or([25, 1], [22, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                            Rule And([25, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                              Rule Or([1, 1], [1, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                                Rule And([1, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                                  Rule Terminal('a') applied in 'aaaaabbaabaaaaa' - 'babaa'
+                                  [false] rule Terminal('a')
+                                Rule And([1, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                                  Rule Terminal('a') applied in 'aaaaabbaabaaaaa' - 'babaa'
+                                  [false] rule Terminal('a')
+                              [false] rule Or([1, 1], [1, 14])
+                            Rule And([22, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                              Rule And([14, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                                Rule Terminal('b') applied in 'aaaaabbaabaaaaa' - 'babaa'
+                                Rule Terminal('b') applied in 'aaaaabbaabaaaaab' - 'abaa'
+                                [false] rule Terminal('b')
+                          [false] rule Or([25, 1], [22, 14])
+                        Rule And([28, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                          Rule And([16, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                            Rule Or([15, 1], [14, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                              Rule And([15, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                                Rule Or([1], [14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                                  Rule And([1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                                    Rule Terminal('a') applied in 'aaaaabbaabaaaaa' - 'babaa'
+                                    [false] rule Terminal('a')
+                                  Rule And([14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                                    Rule Terminal('b') applied in 'aaaaabbaabaaaaa' - 'babaa'
+                                  [true] rule And([14])
+                                [true] rule Or([1], [14])
+                                Rule Terminal('a') applied in 'aaaaabbaabaaaaab' - 'abaa'
+                              [true] rule And([15, 1])
+                            [true] rule Or([15, 1], [14, 14])
+                            Rule Terminal('a') applied in 'aaaaabbaabaaaaaba' - 'baa'
+                            [false] rule Terminal('a')
+                      [false] rule Or([23, 14], [28, 1])
+                  [false] rule Or([9, 14], [10, 1])
+              [false] rule Or([42, 8], [42])
+            Rule And([42]) applied in 'aaaaabbaab' - 'aaaaababaa'
+              Rule Or([9, 14], [10, 1]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                Rule And([9, 14]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                  Rule Or([14, 27], [1, 26]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                    Rule And([14, 27]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                      Rule Terminal('b') applied in 'aaaaabbaab' - 'aaaaababaa'
+                      [false] rule Terminal('b')
+                    Rule And([1, 26]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                      Rule Terminal('a') applied in 'aaaaabbaab' - 'aaaaababaa'
+                      Rule Or([14, 22], [1, 20]) applied in 'aaaaabbaaba' - 'aaaababaa'
+                        Rule And([14, 22]) applied in 'aaaaabbaaba' - 'aaaababaa'
+                          Rule Terminal('b') applied in 'aaaaabbaaba' - 'aaaababaa'
+                          [false] rule Terminal('b')
+                        Rule And([1, 20]) applied in 'aaaaabbaaba' - 'aaaababaa'
+                          Rule Terminal('a') applied in 'aaaaabbaaba' - 'aaaababaa'
+                          Rule Or([14, 14], [1, 15]) applied in 'aaaaabbaabaa' - 'aaababaa'
+                            Rule And([14, 14]) applied in 'aaaaabbaabaa' - 'aaababaa'
+                              Rule Terminal('b') applied in 'aaaaabbaabaa' - 'aaababaa'
+                              [false] rule Terminal('b')
+                            Rule And([1, 15]) applied in 'aaaaabbaabaa' - 'aaababaa'
+                              Rule Terminal('a') applied in 'aaaaabbaabaa' - 'aaababaa'
+                              Rule Or([1], [14]) applied in 'aaaaabbaabaaa' - 'aababaa'
+                                Rule And([1]) applied in 'aaaaabbaabaaa' - 'aababaa'
+                                  Rule Terminal('a') applied in 'aaaaabbaabaaa' - 'aababaa'
+                                [true] rule And([1])
+                              [true] rule Or([1], [14])
+                            [true] rule And([1, 15])
+                          [true] rule Or([14, 14], [1, 15])
+                        [true] rule And([1, 20])
+                      [true] rule Or([14, 22], [1, 20])
+                    [true] rule And([1, 26])
+                  [true] rule Or([14, 27], [1, 26])
+                  Rule Terminal('b') applied in 'aaaaabbaabaaaa' - 'ababaa'
+                  [false] rule Terminal('b')
+                Rule And([10, 1]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                  Rule Or([23, 14], [28, 1]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                    Rule And([23, 14]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                      Rule Or([25, 1], [22, 14]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                        Rule And([25, 1]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                          Rule Or([1, 1], [1, 14]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                            Rule And([1, 1]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                              Rule Terminal('a') applied in 'aaaaabbaab' - 'aaaaababaa'
+                              Rule Terminal('a') applied in 'aaaaabbaaba' - 'aaaababaa'
+                            [true] rule And([1, 1])
+                          [true] rule Or([1, 1], [1, 14])
+                          Rule Terminal('a') applied in 'aaaaabbaabaa' - 'aaababaa'
+                        [true] rule And([25, 1])
+                      [true] rule Or([25, 1], [22, 14])
+                      Rule Terminal('b') applied in 'aaaaabbaabaaa' - 'aababaa'
+                      [false] rule Terminal('b')
+                    Rule And([28, 1]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                      Rule And([16, 1]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                        Rule Or([15, 1], [14, 14]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                          Rule And([15, 1]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                            Rule Or([1], [14]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                              Rule And([1]) applied in 'aaaaabbaab' - 'aaaaababaa'
+                                Rule Terminal('a') applied in 'aaaaabbaab' - 'aaaaababaa'
+                              [true] rule And([1])
+                            [true] rule Or([1], [14])
+                            Rule Terminal('a') applied in 'aaaaabbaaba' - 'aaaababaa'
+                          [true] rule And([15, 1])
+                        [true] rule Or([15, 1], [14, 14])
+                        Rule Terminal('a') applied in 'aaaaabbaabaa' - 'aaababaa'
+                      [true] rule And([16, 1])
+                      Rule Terminal('a') applied in 'aaaaabbaabaaa' - 'aababaa'
+                    [true] rule And([28, 1])
+                  [true] rule Or([23, 14], [28, 1])
+                  Rule Terminal('a') applied in 'aaaaabbaabaaaa' - 'ababaa'
+                [true] rule And([10, 1])
+              [true] rule Or([9, 14], [10, 1])
+            [true] rule And([42])
+          [true] rule Or([42, 8], [42])
+        [true] rule And([42, 8])
+      [true] rule Or([42, 8], [42])
+    [true] rule And([42, 8])
+  [true] rule Or([42, 8], [42])
+  Rule Or([42, 31], [42, 11, 31]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+    Rule And([42, 31]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+      Rule Or([9, 14], [10, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+        Rule And([9, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+          Rule Or([14, 27], [1, 26]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+            Rule And([14, 27]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+              Rule Terminal('b') applied in 'aaaaabbaabaaaaa' - 'babaa'
+              Rule Or([1, 6], [14, 18]) applied in 'aaaaabbaabaaaaab' - 'abaa'
+                Rule And([1, 6]) applied in 'aaaaabbaabaaaaab' - 'abaa'
+                  Rule Terminal('a') applied in 'aaaaabbaabaaaaab' - 'abaa'
+                  Rule Or([14, 14], [1, 14]) applied in 'aaaaabbaabaaaaaba' - 'baa'
+                    Rule And([14, 14]) applied in 'aaaaabbaabaaaaaba' - 'baa'
+                      Rule Terminal('b') applied in 'aaaaabbaabaaaaaba' - 'baa'
+                      Rule Terminal('b') applied in 'aaaaabbaabaaaaabab' - 'aa'
+                      [false] rule Terminal('b')
+                    Rule And([1, 14]) applied in 'aaaaabbaabaaaaaba' - 'baa'
+                      Rule Terminal('a') applied in 'aaaaabbaabaaaaaba' - 'baa'
+                      [false] rule Terminal('a')
+                  [false] rule Or([14, 14], [1, 14])
+                Rule And([14, 18]) applied in 'aaaaabbaabaaaaab' - 'abaa'
+                  Rule Terminal('b') applied in 'aaaaabbaabaaaaab' - 'abaa'
+                  [false] rule Terminal('b')
+              [false] rule Or([1, 6], [14, 18])
+            Rule And([1, 26]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+              Rule Terminal('a') applied in 'aaaaabbaabaaaaa' - 'babaa'
+              [false] rule Terminal('a')
+          [false] rule Or([14, 27], [1, 26])
+        Rule And([10, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+          Rule Or([23, 14], [28, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+            Rule And([23, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+              Rule Or([25, 1], [22, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                Rule And([25, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                  Rule Or([1, 1], [1, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                    Rule And([1, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                      Rule Terminal('a') applied in 'aaaaabbaabaaaaa' - 'babaa'
+                      [false] rule Terminal('a')
+                    Rule And([1, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                      Rule Terminal('a') applied in 'aaaaabbaabaaaaa' - 'babaa'
+                      [false] rule Terminal('a')
+                  [false] rule Or([1, 1], [1, 14])
+                Rule And([22, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                  Rule And([14, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                    Rule Terminal('b') applied in 'aaaaabbaabaaaaa' - 'babaa'
+                    Rule Terminal('b') applied in 'aaaaabbaabaaaaab' - 'abaa'
+                    [false] rule Terminal('b')
+              [false] rule Or([25, 1], [22, 14])
+            Rule And([28, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+              Rule And([16, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                Rule Or([15, 1], [14, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                  Rule And([15, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                    Rule Or([1], [14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                      Rule And([1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                        Rule Terminal('a') applied in 'aaaaabbaabaaaaa' - 'babaa'
+                        [false] rule Terminal('a')
+                      Rule And([14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                        Rule Terminal('b') applied in 'aaaaabbaabaaaaa' - 'babaa'
+                      [true] rule And([14])
+                    [true] rule Or([1], [14])
+                    Rule Terminal('a') applied in 'aaaaabbaabaaaaab' - 'abaa'
+                  [true] rule And([15, 1])
+                [true] rule Or([15, 1], [14, 14])
+                Rule Terminal('a') applied in 'aaaaabbaabaaaaaba' - 'baa'
+                [false] rule Terminal('a')
+          [false] rule Or([23, 14], [28, 1])
+      [false] rule Or([9, 14], [10, 1])
+    Rule And([42, 11, 31]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+      Rule Or([9, 14], [10, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+        Rule And([9, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+          Rule Or([14, 27], [1, 26]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+            Rule And([14, 27]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+              Rule Terminal('b') applied in 'aaaaabbaabaaaaa' - 'babaa'
+              Rule Or([1, 6], [14, 18]) applied in 'aaaaabbaabaaaaab' - 'abaa'
+                Rule And([1, 6]) applied in 'aaaaabbaabaaaaab' - 'abaa'
+                  Rule Terminal('a') applied in 'aaaaabbaabaaaaab' - 'abaa'
+                  Rule Or([14, 14], [1, 14]) applied in 'aaaaabbaabaaaaaba' - 'baa'
+                    Rule And([14, 14]) applied in 'aaaaabbaabaaaaaba' - 'baa'
+                      Rule Terminal('b') applied in 'aaaaabbaabaaaaaba' - 'baa'
+                      Rule Terminal('b') applied in 'aaaaabbaabaaaaabab' - 'aa'
+                      [false] rule Terminal('b')
+                    Rule And([1, 14]) applied in 'aaaaabbaabaaaaaba' - 'baa'
+                      Rule Terminal('a') applied in 'aaaaabbaabaaaaaba' - 'baa'
+                      [false] rule Terminal('a')
+                  [false] rule Or([14, 14], [1, 14])
+                Rule And([14, 18]) applied in 'aaaaabbaabaaaaab' - 'abaa'
+                  Rule Terminal('b') applied in 'aaaaabbaabaaaaab' - 'abaa'
+                  [false] rule Terminal('b')
+              [false] rule Or([1, 6], [14, 18])
+            Rule And([1, 26]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+              Rule Terminal('a') applied in 'aaaaabbaabaaaaa' - 'babaa'
+              [false] rule Terminal('a')
+          [false] rule Or([14, 27], [1, 26])
+        Rule And([10, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+          Rule Or([23, 14], [28, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+            Rule And([23, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+              Rule Or([25, 1], [22, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                Rule And([25, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                  Rule Or([1, 1], [1, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                    Rule And([1, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                      Rule Terminal('a') applied in 'aaaaabbaabaaaaa' - 'babaa'
+                      [false] rule Terminal('a')
+                    Rule And([1, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                      Rule Terminal('a') applied in 'aaaaabbaabaaaaa' - 'babaa'
+                      [false] rule Terminal('a')
+                  [false] rule Or([1, 1], [1, 14])
+                Rule And([22, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                  Rule And([14, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                    Rule Terminal('b') applied in 'aaaaabbaabaaaaa' - 'babaa'
+                    Rule Terminal('b') applied in 'aaaaabbaabaaaaab' - 'abaa'
+                    [false] rule Terminal('b')
+              [false] rule Or([25, 1], [22, 14])
+            Rule And([28, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+              Rule And([16, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                Rule Or([15, 1], [14, 14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                  Rule And([15, 1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                    Rule Or([1], [14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                      Rule And([1]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                        Rule Terminal('a') applied in 'aaaaabbaabaaaaa' - 'babaa'
+                        [false] rule Terminal('a')
+                      Rule And([14]) applied in 'aaaaabbaabaaaaa' - 'babaa'
+                        Rule Terminal('b') applied in 'aaaaabbaabaaaaa' - 'babaa'
+                      [true] rule And([14])
+                    [true] rule Or([1], [14])
+                    Rule Terminal('a') applied in 'aaaaabbaabaaaaab' - 'abaa'
+                  [true] rule And([15, 1])
+                [true] rule Or([15, 1], [14, 14])
+                Rule Terminal('a') applied in 'aaaaabbaabaaaaaba' - 'baa'
+                [false] rule Terminal('a')
+          [false] rule Or([23, 14], [28, 1])
+      [false] rule Or([9, 14], [10, 1])
+  [false] rule Or([42, 31], [42, 11, 31])
+[aaaaabbaabaaaaababaa] = false
+NUMBER OF MATCHES: 0
+
