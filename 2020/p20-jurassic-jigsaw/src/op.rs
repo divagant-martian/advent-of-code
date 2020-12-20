@@ -51,8 +51,9 @@ pub struct Op {
 }
 
 pub trait Operation {
+    #[allow(clippy::ptr_arg)]
     fn operate_clone(&self, tile: &Tile) -> Tile {
-        let mut tile = tile.clone();
+        let mut tile = tile.to_owned();
         self.operate(&mut tile);
         tile
     }

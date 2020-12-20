@@ -10,6 +10,7 @@ pub enum Border {
 pub const BORDERS: [Border; 4] = [Border::R, Border::L, Border::U, Border::D];
 
 impl Border {
+    #[allow(clippy::ptr_arg)]
     pub fn get(&self, tile: &Tile) -> Vec<usize> {
         let max_x = tile.iter().map(|p| p.0).max().unwrap();
         let max_y = tile.iter().map(|p| p.1).max().unwrap();

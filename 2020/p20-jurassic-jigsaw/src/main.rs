@@ -1,8 +1,7 @@
 use crate::border::BORDERS;
-use crate::op::{Op, Operation, OPERATIONS};
-use crate::parse::parse_tile_file;
-use std::collections::HashMap;
+use crate::op::{Operation, OPERATIONS};
 use std::collections::VecDeque;
+use std::collections::{HashMap, HashSet};
 
 mod border;
 mod op;
@@ -15,11 +14,58 @@ pub type Tile = Vec<Position>;
 
 fn main() {
     let path = std::env::args().nth(1).expect("no path given");
-    let tiles = parse_tile_file(&path);
-    let real_pic = get_flattend_pic(tiles);
+    let paint_1 = std::env::args()
+        .nth(2)
+        .unwrap_or_else(|| "f".to_string())
+        .chars()
+        .next()
+        .map(|c| c == 't')
+        .unwrap();
+    let tiles = parse::parse_tile_file(&path);
+    let real_pic = get_flattend_pic(tiles, paint_1);
+    find_monsters(real_pic)
 }
 
-fn get_flattend_pic(mut unasigned_tiles: HashMap<TileId, Tile>) -> Tile {
+fn find_monsters(big_tile: Tile) {
+    let monster = "Tile 1:
+                  #
+#    ##    ##    ###
+ #  #  #  #  #  #";
+    let (_, monster_tiles) = parse::parse_tile(monster);
+    let monster_width = monster_tiles.iter().map(|pos| pos.0).max().unwrap();
+    let monster_height = monster_tiles.iter().map(|pos| pos.1).max().unwrap();
+
+    paint::paint_tile(&monster_tiles);
+
+    // try every possible operation
+    for op in &OPERATIONS[1..] {
+        let try_board: HashSet<_> = op.operate_clone(&big_tile).into_iter().collect();
+        let mut tiles_with_monsters = HashSet::new();
+
+        let max_x = try_board.iter().map(|pos| pos.0).max().unwrap() - monster_width;
+        let max_y = try_board.iter().map(|pos| pos.1).max().unwrap() - monster_height;
+        for y_shift in 0..=max_y {
+            for x_shift in 0..=max_x {
+                // build the tiles of the shifted monster
+                let shifted_monster: Vec<_> = monster_tiles
+                    .iter()
+                    .map(|(x, y)| (x + x_shift, y + y_shift))
+                    .collect();
+                // check that the monster tiles are contained in the board
+                if shifted_monster.iter().all(|pos| try_board.contains(pos)) {
+                    tiles_with_monsters.extend(shifted_monster);
+                }
+            }
+        }
+        if !tiles_with_monsters.is_empty() {
+            paint::paint_tile_with_monsters(&try_board, &tiles_with_monsters);
+            dbg!(try_board.difference(&tiles_with_monsters).count());
+            break;
+        }
+    }
+}
+
+fn get_flattend_pic(mut unasigned_tiles: HashMap<TileId, Tile>, paint_image: bool) -> Tile {
     let mut assigned_tiles: HashMap<TileId, Tile> = HashMap::new();
     let mut search_queue = VecDeque::new();
     let mut puzzle: HashMap<(usize, usize), TileId> = HashMap::new();
@@ -56,8 +102,10 @@ fn get_flattend_pic(mut unasigned_tiles: HashMap<TileId, Tile>) -> Tile {
         }
     }
     assert!(unasigned_tiles.is_empty(), "All tiles must be used");
-    let big_flattened = flatten_puzzle(&puzzle, &assigned_tiles);
-    paint::paint_tile(&big_flattened);
+    if paint_image {
+        let big_flattened = flatten_puzzle(&puzzle, &assigned_tiles);
+        paint::paint_tile(&big_flattened);
+    }
 
     // We completed the puzzle, not let's find the corners
     let part_1: usize = puzzle
@@ -112,6 +160,7 @@ fn flatten_puzzle(puzzle: &HashMap<(usize, usize), TileId>, tiles: &HashMap<Tile
     flatened_puzzle
 }
 
+#[allow(clippy::ptr_arg)]
 fn fits_at_position(
     maybe_tile: &Tile,
     puzzle: &HashMap<(usize, usize), TileId>,
