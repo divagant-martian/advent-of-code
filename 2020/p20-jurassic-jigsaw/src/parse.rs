@@ -1,5 +1,5 @@
 use crate::{Tile, TileId};
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::fs::read_to_string;
 
 pub fn parse_tile(data: &str) -> (TileId, Tile) {
@@ -23,7 +23,7 @@ pub fn parse_tile(data: &str) -> (TileId, Tile) {
     (tile_id, tiles)
 }
 
-pub fn parse_tile_file(path: &str) -> BTreeMap<TileId, Tile> {
+pub fn parse_tile_file(path: &str) -> HashMap<TileId, Tile> {
     read_to_string(path)
         .expect("bad file")
         .split("\n\n")

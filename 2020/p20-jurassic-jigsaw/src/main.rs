@@ -3,7 +3,7 @@ use crate::op::{Flip, Op, Operation, Rotate, OPERATIONS};
 #[allow(unused)]
 use crate::paint::paint_tile;
 use crate::parse::parse_tile_file;
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::collections::VecDeque;
 
 mod op;
@@ -25,7 +25,8 @@ const BORDERS: [Border; 4] = [Border::R, Border::L, Border::U, Border::D];
 
 impl Border {
     fn get(&self, tile: &Tile) -> Vec<usize> {
-        let (max_x, max_y) = tile.iter().max().cloned().unwrap();
+        let max_x = tile.iter().map(|p| p.0).max().unwrap();
+        let max_y = tile.iter().map(|p| p.1).max().unwrap();
         let mut border: Vec<usize> = tile
             .iter()
             .filter(|(x, y)| match self {
@@ -43,6 +44,7 @@ impl Border {
         border.sort_unstable();
         border
     }
+
     fn oposite(&self) -> Self {
         match self {
             Border::U => Border::D,
@@ -51,86 +53,106 @@ impl Border {
             Border::L => Border::R,
         }
     }
-}
 
-fn matches_border(
-    fixed_tile: &Tile,
-    searched_border: &Border,
-    movable_tile: &Tile,
-) -> Option<Tile> {
-    let fixed_border = searched_border.get(fixed_tile);
-    let matching_border = searched_border.oposite();
-    for op in &OPERATIONS {
-        let moved_tile = op.operate_clone(movable_tile);
-        let border_to_check = matching_border.get(&moved_tile);
-        if fixed_border == border_to_check {
-            return Some(moved_tile);
+    fn position_at_border(&self, placement: &(usize, usize)) -> (usize, usize) {
+        match self {
+            Border::U => (placement.0, placement.1 - 1),
+            Border::D => (placement.0, placement.1 + 1),
+            Border::R => (placement.0 + 1, placement.1),
+            Border::L => (placement.0 - 1, placement.1),
         }
     }
-
-    None
 }
 
 fn main() {
     let path = std::env::args().nth(1).expect("no path given");
     let mut unasigned_tiles = parse_tile_file(&path);
-    let mut assigned_tiles: BTreeMap<TileId, Tile> = BTreeMap::new();
+    let mut assigned_tiles: HashMap<TileId, Tile> = HashMap::new();
     let mut search_queue = VecDeque::new();
-    let mut puzzle: BTreeMap<(usize, usize), TileId> = BTreeMap::new();
+    let mut puzzle: HashMap<(usize, usize), TileId> = HashMap::new();
 
-    // put the first tile in the middle of the board
-    let first_id = unasigned_tiles.keys().next().cloned().unwrap();
-    let first_tile = unasigned_tiles.remove(&first_id).unwrap();
     let first_position = (100, 100);
-    puzzle.insert(first_position, first_id);
-    assigned_tiles.insert(first_id, first_tile);
-    search_queue.push_back((first_id, first_position.0, first_position.1));
+    search_queue.push_back(first_position);
 
     let final_op = Op {
         rotate: None,
         flip: None,
     };
 
-    while let Some((current_fixed_id, placement_x, placement_y)) = search_queue.pop_front() {
-        // get the tile
-        let current_tile = assigned_tiles.get(&current_fixed_id).cloned().unwrap();
-
-        // search for each side a matching tile
-        for border in &BORDERS {
-            // check first is this slot is occupied
-            let puzzle_position = match border {
-                Border::D => (placement_x, placement_y + 1),
-                Border::U => (placement_x, placement_y - 1),
-                Border::R => (placement_x + 1, placement_y),
-                Border::L => (placement_x - 1, placement_y),
-            };
-
-            if puzzle.contains_key(&puzzle_position) {
-                continue;
+    // assuming the first one that fits is one we can use (this worked fortunately)
+    while let Some(position) = search_queue.pop_front() {
+        if puzzle.contains_key(&position) {
+            continue;
+        }
+        let mut found = None;
+        for (maybe_id, maybe_tile) in &unasigned_tiles {
+            if let Some(modified) =
+                fits_at_position(maybe_tile, &puzzle, &assigned_tiles, &position)
+            {
+                found = Some((*maybe_id, modified));
+                break;
             }
+        }
 
-            // we need to check this border
+        if let Some((id, tile)) = found {
+            puzzle.insert(position, id);
+            assigned_tiles.insert(id, tile);
+            unasigned_tiles.remove(&id);
 
-            let mut found = None;
-            for (maybe_id, maybe_tile) in &unasigned_tiles {
-                if let Some(moved_tile) = matches_border(&current_tile, border, maybe_tile) {
-                    found = Some((*maybe_id, moved_tile));
-                    break;
-                }
-            }
-
-            if let Some((found_id, modified_tile)) = found {
-                // we found one
-                unasigned_tiles.remove(&found_id);
-                assigned_tiles.insert(found_id, modified_tile);
-                search_queue.push_back((found_id, puzzle_position.0, puzzle_position.1));
-                assert!(puzzle.insert(puzzle_position, found_id).is_none());
-                if assigned_tiles.len() > 100 {
-                    paint::paint_puzzle(&puzzle, &assigned_tiles, &final_op);
-                    println!("{}", "\n".repeat(5));
-                    std::thread::sleep_ms(600);
+            for border in &BORDERS {
+                let to_check = border.position_at_border(&position);
+                if !puzzle.contains_key(&to_check) {
+                    search_queue.push_back(to_check);
                 }
             }
         }
     }
+    assert!(unasigned_tiles.is_empty(), "All tiles must be used");
+    paint::paint_puzzle(&puzzle, &assigned_tiles, &final_op);
+
+    // We completed the puzzle, not let's find the corners
+    let part_1: usize = puzzle
+        .iter()
+        .filter_map(|(position, tile_id)| {
+            if BORDERS
+                .iter()
+                .filter(|border| puzzle.contains_key(&border.position_at_border(position)))
+                .count()
+                == 2
+            {
+                println!("corner {}", tile_id);
+                Some(tile_id)
+            } else {
+                None
+            }
+        })
+        .product();
+    println!("Part 1 {}", part_1);
+}
+
+fn fits_at_position(
+    maybe_tile: &Tile,
+    puzzle: &HashMap<(usize, usize), TileId>,
+    assigned_tiles: &HashMap<TileId, Tile>,
+    placement: &(usize, usize),
+) -> Option<Tile> {
+    // check if there is one operation that makes it fit everywhere
+    for op in &OPERATIONS {
+        let modified = op.operate_clone(maybe_tile);
+        let mut fits = true;
+        for border in &BORDERS {
+            let to_check = border.position_at_border(placement);
+            if let Some(fixed_id) = puzzle.get(&to_check) {
+                let fixed_tile = assigned_tiles.get(fixed_id).unwrap();
+                if border.get(&modified) != border.oposite().get(fixed_tile) {
+                    fits = false;
+                    break;
+                }
+            }
+        }
+        if fits {
+            return Some(modified);
+        }
+    }
+    None
 }

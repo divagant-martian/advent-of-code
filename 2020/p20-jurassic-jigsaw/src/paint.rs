@@ -1,6 +1,6 @@
 use crate::op::{Op, Operation};
 use crate::{Tile, TileId};
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 pub fn paint_tile(tile: &Tile) -> String {
     let (max_x, max_y) = tile
@@ -29,14 +29,18 @@ pub fn paint_tile(tile: &Tile) -> String {
 }
 
 pub fn paint_puzzle(
-    puzzle: &BTreeMap<(usize, usize), TileId>,
-    tiles: &BTreeMap<TileId, Tile>,
+    puzzle: &HashMap<(usize, usize), TileId>,
+    tiles: &HashMap<TileId, Tile>,
     op: &Op,
 ) {
     let min_x = puzzle.keys().map(|pos| pos.0).min().unwrap();
     let min_y = puzzle.keys().map(|pos| pos.1).min().unwrap();
 
-    let size = 11;
+    let size = tiles
+        .values()
+        .map(|list| list.iter().map(|pos| pos.0).max().unwrap())
+        .max()
+        .unwrap();
     let mut flatened_puzzle = Vec::new();
     for ((mut puzzle_x, mut puzzle_y), tile_id) in puzzle {
         let tile = tiles.get(tile_id).unwrap();
