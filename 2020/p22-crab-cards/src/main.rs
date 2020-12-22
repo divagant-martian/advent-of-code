@@ -48,16 +48,16 @@ fn combat(
     }
 
     if player_1.is_empty() {
-        ("Player 2", score(&player_2))
+        ("Me", score(&player_2))
     } else {
-        ("Player 1", score(&player_1))
+        ("Crab", score(&player_1))
     }
 }
 
 fn recursive_combat(player_1: VecDeque<Card>, player_2: VecDeque<Card>) -> (&'static str, Score) {
     match recursive_combat_rec(player_1, player_2) {
-        Ok(score) => ("Player 1", score),
-        Err(score) => ("Player 2", score),
+        Ok(score) => ("Crab", score),
+        Err(score) => ("Me", score),
     }
 }
 
