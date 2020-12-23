@@ -14,6 +14,12 @@ fn main() {
         .expect("Provide a number of times to shift the cups")
         .parse()
         .unwrap();
+
+    let mut current_cup = nums
+        .chars()
+        .next()
+        .map(|c| c.to_digit(10).unwrap() as Cup)
+        .unwrap();
     let mut nums: Vec<Cup> = nums
         .chars()
         .map(|c| c.to_digit(10).unwrap() as Cup)
@@ -23,15 +29,12 @@ fn main() {
         nums.push(n + 1);
         n += 1;
     }
-    let mut danums = HashMap::with_capacity(n);
+    let mut danums = HashMap::with_capacity(1_000_000);
     for w in nums.windows(2) {
         danums.insert(w[0], w[1]);
     }
-    // add the first and last
-    danums.insert(nums[0], nums[1]);
+    // add the last
     danums.insert(nums[n - 1], nums[0]);
-
-    let mut current_cup = nums[0];
 
     for round in 1..=rounds {
         if round % 1_000_000 == 0 {
