@@ -1,12 +1,25 @@
+use std::collections::HashSet;
+
 fn main() {
     let input = std::fs::read_to_string("./data/input.txt").expect("Input is ok");
     let (draws, mut boards) = parse_input(&input);
-    let (winning_draw_position, winning_board_position) = play(&draws, &mut boards);
+
+    let wins = play(&draws, &mut boards);
+
+    let (winning_draw_position, winning_board_position) = wins[0];
     let score = calculate_score(
         draws[winning_draw_position],
         &boards[winning_board_position],
     );
     println!("Score: {}", score);
+
+    let &(last_winning_draw_position, last_winning_board_position) =
+        wins.last().expect("More than a board will win");
+    let score = calculate_score(
+        draws[last_winning_draw_position],
+        &boards[last_winning_board_position],
+    );
+    println!("last score: {}", score);
 }
 
 type Board = Vec<Vec<(u8, bool)>>;
@@ -77,18 +90,21 @@ fn format_board(board: &Board) -> String {
 fn play(
     draws: &Vec<u8>,
     boards: &mut Vec<Board>,
-) -> (
+) -> Vec<(
     usize, /* winning draw position */
     usize, /* winning board position */
-) {
+)> {
+    let mut wins = Vec::new();
+    let mut already_won_boards: HashSet<usize> = HashSet::default();
     for (i, n) in draws.iter().enumerate() {
         for (board_number, board) in boards.iter_mut().enumerate() {
-            if mark_number(*n, board) {
-                return (i, board_number);
+            if !already_won_boards.contains(&board_number) && mark_number(*n, board) {
+                wins.push((i, board_number));
+                already_won_boards.insert(board_number);
             }
         }
     }
-    panic!("no one wins")
+    wins
 }
 
 fn calculate_score(winning_n: u8, winning_board: &Board) -> u32 {
@@ -152,11 +168,21 @@ mod tests {
         ";
 
         let (draws, mut boards) = parse_input(input);
-        let (winning_draw_position, winning_board_position) = play(&draws, &mut boards);
+        let mut wins = play(&draws, &mut boards);
+        println!("{:?}", wins);
+        let (winning_draw_position, winning_board_position) = wins.remove(0);
         let score = calculate_score(
             draws[winning_draw_position],
             &boards[winning_board_position],
         );
         assert_eq!(score, 4512);
+
+        let &(last_winning_draw_position, last_winning_board_position) =
+            wins.last().expect("More than a board will win");
+        let score = calculate_score(
+            draws[last_winning_draw_position],
+            &boards[last_winning_board_position],
+        );
+        assert_eq!(score, 1924);
     }
 }
