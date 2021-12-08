@@ -38,12 +38,12 @@ fn intersecting_points(segments: &Vec<Segment>) -> HashMap<Point, usize> {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 struct Point {
-    x: i16,
-    y: i16,
+    x: i32,
+    y: i32,
 }
 
-impl std::convert::From<(i16, i16)> for Point {
-    fn from((x, y): (i16, i16)) -> Self {
+impl std::convert::From<(i32, i32)> for Point {
+    fn from((x, y): (i32, i32)) -> Self {
         Point { x, y }
     }
 }
@@ -53,6 +53,29 @@ struct Segment {
     init: Point,
     m: Point,
     max_t: u16,
+}
+
+struct SegmentIter {
+    max_t: i32,
+    t: i32,
+    init: Point,
+    m: Point,
+}
+impl std::iter::Iterator for SegmentIter {
+    type Item = Point;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.t <= self.max_t {
+            let p = Point {
+                x: self.init.x + self.t * self.m.x,
+                y: self.init.y + self.t * self.m.y,
+            };
+            self.t += 1;
+            Some(p)
+        } else {
+            None
+        }
+    }
 }
 
 impl Segment {
@@ -68,30 +91,53 @@ impl Segment {
         self.is_vertical() || self.is_horizontal()
     }
 
-    fn points(&self) -> Vec<Point> {
-        let mut t: i16 = 0;
-        let max_t = self.max_t as i16;
-
-        let mut points = Vec::with_capacity(self.max_t.into());
-        while t <= max_t {
-            points.push(Point {
-                x: self.init.x + t * self.m.x,
-                y: self.init.y + t * self.m.y,
-            });
-            t += 1;
+    fn iter(&self) -> SegmentIter {
+        SegmentIter {
+            max_t: self.max_t as i32,
+            t: 0,
+            init: self.init,
+            m: self.m,
         }
-        points
+    }
+
+    fn contains(&self, point: &Point) -> bool {
+        match (self.m.x.abs(), self.m.y.abs()) {
+            (0, 0) => unreachable!("sadfja"),
+            (0, _) => {
+                // vertical
+                let tx = point.x - self.init.x;
+                let ty = (point.y - self.init.y) / self.m.y;
+
+                tx == 0 && ty >= 0 && ty <= self.max_t.into()
+            }
+            (_, 0) => {
+                // horizontal
+                let ty = point.y - self.init.y;
+                let tx = (point.x - self.init.x) / self.m.x;
+
+                0 == ty && tx >= 0 && tx <= self.max_t.into()
+            }
+            _ => {
+                let tym = point.y - self.init.y;
+                let txm = point.x - self.init.x;
+
+                if tym % self.m.y != 0 || txm % self.m.x != 0 {
+                    return false;
+                }
+
+                let tx = txm / self.m.x;
+                let ty = tym / self.m.y;
+                tx == ty && tx >= 0 && tx <= self.max_t.into()
+            }
+        }
     }
 
     fn intersections(&self, other: &Segment) -> Vec<Point> {
-        let points = self.points();
-        let mut others = other.points();
-        others.retain(|p| points.contains(&p));
-        others
+        other.iter().filter(|p| self.contains(&p)).collect()
     }
 
     fn end(&self) -> Point {
-        let t = self.max_t as i16;
+        let t = self.max_t as i32;
         Point {
             x: self.init.x + self.m.x * t,
             y: self.init.y + self.m.y * t,
@@ -130,10 +176,10 @@ impl std::str::FromStr for Segment {
             .map_err(|_| "Could not parse input.")?;
 
         let (x0, y0, x1, y1) = (
-            parts[0] as i16,
-            parts[1] as i16,
-            parts[2] as i16,
-            parts[3] as i16,
+            parts[0] as i32,
+            parts[1] as i32,
+            parts[2] as i32,
+            parts[3] as i32,
         );
         let up = y1 - y0;
         let down = x1 - x0;
@@ -149,7 +195,7 @@ impl std::str::FromStr for Segment {
     }
 }
 // Euclid's two-thousand-year-old algorithm for finding the greatest common divisor.
-fn gcd(x: i16, y: i16) -> i16 {
+fn gcd(x: i32, y: i32) -> i32 {
     let mut x = x;
     let mut y = y;
     while y != 0 {
@@ -182,21 +228,21 @@ mod tests {
             (4, 9).into(),
             (5, 9).into(),
         ];
-        assert_eq!(segment.points(), expected_points);
+        assert_eq!(segment.iter().collect::<Vec<Point>>(), expected_points);
     }
 
     #[test]
     fn test_points_vertical() {
         let segment: Segment = str::parse("1,2 -> 1,4").expect("format is ok");
         let expected_points = vec![(1, 2).into(), (1, 3).into(), (1, 4).into()];
-        assert_eq!(segment.points(), expected_points);
+        assert_eq!(segment.iter().collect::<Vec<Point>>(), expected_points);
     }
 
     #[test]
     fn test_points() {
         let segment: Segment = str::parse("0,0 -> 4,6").expect("format is ok");
         let expected_points = vec![(0, 0).into(), (2, 3).into(), (4, 6).into()];
-        assert_eq!(segment.points(), expected_points);
+        assert_eq!(segment.iter().collect::<Vec<Point>>(), expected_points);
     }
 
     #[test]
@@ -204,17 +250,28 @@ mod tests {
         // same line
         let segment_a: Segment = str::parse("0,0 -> 4,6").expect("format is ok");
         let segment_b = segment_a.clone();
-        assert_eq!(segment_a.intersections(&segment_b), segment_a.points());
+        assert_eq!(
+            segment_a.intersections(&segment_b),
+            segment_a.iter().collect::<Vec<Point>>()
+        );
 
         // contained b in a
         let segment_a: Segment = str::parse("0,9 -> 5,9").expect("format is ok");
         let segment_b: Segment = str::parse("0,9 -> 2,9").expect("format is ok");
-        assert_eq!(segment_a.intersections(&segment_b), segment_b.points());
+        assert_eq!(
+            segment_a.intersections(&segment_b),
+            segment_b.iter().collect::<Vec<Point>>()
+        );
 
         // horizontal and vertial
         let segment_a: Segment = str::parse("0,9 -> 5,9").expect("format is ok");
         let segment_b: Segment = str::parse("3,0 -> 3,10").expect("format is ok");
         assert_eq!(segment_a.intersections(&segment_b), vec![(3, 9).into()]);
+
+        // horizontal and diagonal
+        let segment_a: Segment = str::parse("0,9 -> 15,9").expect("format is ok");
+        let segment_b: Segment = str::parse("9,9 -> 7,7").expect("format is ok");
+        assert_eq!(segment_a.intersections(&segment_b), vec![(9, 9).into()]);
     }
 
     #[test]
