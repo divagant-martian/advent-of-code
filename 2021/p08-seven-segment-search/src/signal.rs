@@ -1,6 +1,6 @@
 use Signal::*;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Signal {
     A,
     B,
@@ -27,6 +27,7 @@ impl std::convert::From<char> for Signal {
 }
 
 impl Signal {
+    pub const ALL: &'static [Self] = &[A, B, C, D, E, F, G];
     pub fn as_char(&self) -> char {
         match self {
             B | E | C | F => '|',
