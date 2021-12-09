@@ -1,6 +1,8 @@
+use std::collections::BTreeSet;
+
 use crate::signal::Signal;
 
-pub fn parse_clues(input: &str) -> [Vec<Signal>; 10] {
+pub fn parse_clues(input: &str) -> [BTreeSet<Signal>; 10] {
     input
         .trim()
         .split_whitespace()
