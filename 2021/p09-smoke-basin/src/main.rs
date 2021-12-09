@@ -38,7 +38,6 @@ pub fn parse_grid(input: &str) -> Grid {
 }
 
 struct Basin {
-    start_point: (usize, usize),
     members: Vec<(usize, usize)>,
 }
 
@@ -64,10 +63,7 @@ impl Basin {
             }
         }
 
-        Basin {
-            start_point: low,
-            members,
-        }
+        Basin { members }
     }
 }
 
