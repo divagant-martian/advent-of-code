@@ -2,25 +2,29 @@ mod digit;
 mod guess;
 mod parsing;
 mod signal;
+mod signal_set;
 
-use digit::Digit::*;
-use signal::Signal::{self, *};
-
-fn main() {}
+fn main() {
+    let (clues, outs) = parsing::parse_input(
+        "acedgfb cdfbe gcdfa fbcad dab cefabd cdfgeb eafb cagedb ab | cdfeb fcadb cdfeb cdbaf",
+    )[0];
+    let mappings = guess::corrupt_digit_signals(clues);
+    let digits = guess::decipher(outs, mappings);
+    assert_eq!(digits, [5, 3, 5, 3]);
+}
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{BTreeSet, HashMap, HashSet};
 
     use super::*;
 
     #[test]
     fn test_possible_matchings() {
-        let input =
-            parsing::parse_clues("acedgfb cdfbe gcdfa fbcad dab cefabd cdfgeb eafb cagedb ab");
-        guess::guess(input);
-        // fa
-        // fg
-        // ag
+        let (clues, outs) = parsing::parse_line(
+            "acedgfb cdfbe gcdfa fbcad dab cefabd cdfgeb eafb cagedb ab | cdfeb fcadb cdfeb cdbaf",
+        );
+        let mappings = guess::corrupt_digit_signals(clues);
+        let digits = guess::decipher(outs, mappings);
+        assert_eq!(digits, [5, 3, 5, 3]);
     }
 }

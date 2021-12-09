@@ -1,17 +1,18 @@
 use Signal::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[repr(u8)]
 pub enum Signal {
-    A,
-    B,
-    C,
-    D,
-    E,
-    F,
-    G,
+    A = 0,
+    B = 1,
+    C = 2,
+    D = 3,
+    E = 4,
+    F = 5,
+    G = 6,
 }
 
-impl std::convert::From<char> for Signal {
+impl From<char> for Signal {
     fn from(c: char) -> Self {
         match c {
             'a' => A,
@@ -41,23 +42,4 @@ impl Signal {
             _ => false,
         }
     }
-}
-
-pub fn print_signals(signals: &[Signal]) {
-    let mut digit = String::with_capacity(12);
-    digit.push(' ');
-
-    for s in [A, B, D, C, E, G, F] {
-        if signals.contains(&s) {
-            digit.push(s.as_char());
-        } else {
-            digit.push(' ');
-        }
-
-        if s.enter() {
-            digit.push('\n');
-        }
-    }
-
-    print!("{}", digit);
 }

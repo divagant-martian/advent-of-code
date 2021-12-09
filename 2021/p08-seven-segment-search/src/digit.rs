@@ -3,17 +3,18 @@ use Digit::*;
 use crate::signal::Signal::{self, *};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[repr(u8)]
 pub enum Digit {
-    D0,
-    D1,
-    D2,
-    D3,
-    D4,
-    D5,
-    D6,
-    D7,
-    D8,
-    D9,
+    D0 = 0,
+    D1 = 1,
+    D2 = 2,
+    D3 = 3,
+    D4 = 4,
+    D5 = 5,
+    D6 = 6,
+    D7 = 7,
+    D8 = 8,
+    D9 = 9,
 }
 
 impl Digit {
@@ -32,5 +33,9 @@ impl Digit {
             D8 => Signal::ALL,
             D9 => &[A, B, C, D, F, G],
         }
+    }
+
+    pub fn as_u8(&self) -> u8 {
+        *self as u8
     }
 }
