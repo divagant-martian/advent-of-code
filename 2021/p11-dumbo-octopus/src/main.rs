@@ -1,7 +1,24 @@
 use std::collections::VecDeque;
 
 fn main() {
-    println!("Hello, world!");
+    let mut input = "
+        7222221271
+        6463754232
+        3373484684
+        4674461265
+        1187834788
+        1175316351
+        8211411846
+        4657828333
+        5286325337
+        5771324832
+    "
+    .parse::<Grid<10>>()
+    .expect("input is ok");
+
+    let mut count = 0;
+    input.evolve_counting_flashes_n_times(&mut count, 100);
+    println!("Flashes after 100: {}", count);
 }
 
 #[derive(PartialEq, Eq)]
@@ -61,56 +78,90 @@ impl<const N: usize> std::fmt::Debug for Grid<N> {
 }
 
 impl<const N: usize> Grid<N> {
-    /// Checks if the octopus in the given position flashes. If so, it increases the energy of any
-    /// neighbor that has not flashed yet and updates the queue to check them.
-    fn propagate_flash(&mut self, pos: Pos, to_visit: &mut VecDeque<Pos>, flashed: &mut Vec<Pos>) {
-        if flashed.contains(&pos) {
-            return;
-        }
-        if self.octopuses[pos.0][pos.1] > 9 {
-            flashed.push(pos);
-            let (i, j) = pos;
-            for delta_i in 0..=2 {
-                for delta_j in 0..=2 {
-                    let ni = (i + 1).saturating_sub(delta_i);
-                    let nj = (j + 1).saturating_sub(delta_j);
-                    if ni != i || nj != j {
-                        if let Some(Some(n)) = self.octopuses.get_mut(ni).map(|row| row.get_mut(nj))
-                        {
-                            let pos = (ni, nj);
-                            if !flashed.contains(&pos) && !to_visit.contains(&pos) {
-                                *n += 1;
-                                to_visit.push_back(pos)
+    pub fn evolve(&mut self) {
+        let mut flashed = Vec::default();
+        let mut to_visit = VecDeque::default();
+
+        /// Checks if the octopus in the given position flashes. If so, it increases the energy of any
+        /// neighbor that has not flashed yet and updates the queue to check them.
+        fn propagate_flash<const N: usize>(
+            this: &mut Grid<N>,
+            pos: Pos,
+            to_visit: &mut VecDeque<Pos>,
+            flashed: &mut Vec<Pos>,
+        ) {
+            if flashed.contains(&pos) {
+                return;
+            }
+            if this.octopuses[pos.0][pos.1] > 9 {
+                flashed.push(pos);
+                let (i, j) = pos;
+                for delta_i in 0..=2 {
+                    for delta_j in 0..=2 {
+                        let ni = match (i + 1).checked_sub(delta_i) {
+                            Some(ni) => ni,
+                            None => continue,
+                        };
+                        let nj = match (j + 1).checked_sub(delta_j) {
+                            Some(nj) => nj,
+                            None => continue,
+                        };
+                        if ni != i || nj != j {
+                            if let Some(Some(n)) =
+                                this.octopuses.get_mut(ni).map(|row| row.get_mut(nj))
+                            {
+                                let pos = (ni, nj);
+                                if !flashed.contains(&pos) {
+                                    *n += 1;
+                                }
+                                if !to_visit.contains(&pos) {
+                                    to_visit.push_back(pos)
+                                }
                             }
                         }
                     }
                 }
             }
         }
-    }
-
-    pub fn evolve(&mut self) {
-        let mut flashed = Vec::default();
-        let mut to_visit = VecDeque::default();
 
         // Find the first flashing octopuses
         for i in 0..N {
             for j in 0..N {
                 // First the energy of each octopus increases by one
                 self.octopuses[i][j] += 1;
-                self.propagate_flash((i, j), &mut to_visit, &mut flashed);
+                if self.octopuses[i][j] > 9 {
+                    to_visit.push_back((i, j));
+                }
             }
         }
 
         // Now find any recursive flashing octopus
         while let Some(pos) = to_visit.pop_front() {
-            self.propagate_flash(pos, &mut to_visit, &mut flashed)
+            propagate_flash(self, pos, &mut to_visit, &mut flashed)
         }
 
         // Send any flashing octopus to 0
         for (i, j) in flashed {
             assert!(self.octopuses[i][j] > 9);
             self.octopuses[i][j] = 0;
+        }
+    }
+
+    fn count_flashes(&self) -> usize {
+        self.octopuses
+            .iter()
+            .flat_map(|row| row.iter().filter(|&&n| n == 0))
+            .count()
+    }
+
+    fn evolve_counting_flashes(&mut self, count: &mut usize) {
+        self.evolve();
+        *count += self.count_flashes()
+    }
+
+    fn evolve_counting_flashes_n_times(&mut self, count: &mut usize, times: usize) {
+        for _ in 0..times {
+            self.evolve_counting_flashes(count)
         }
     }
 }
@@ -303,5 +354,30 @@ mod tests {
             input.evolve();
             assert_eq!(input, grid);
         }
+    }
+
+    #[test]
+    fn test_count_flashes() {
+        let mut input = "
+            5483143223
+            2745854711
+            5264556173
+            6141336146
+            6357385478
+            4167524645
+            2176841721
+            6882881134
+            4846848554
+            5283751526
+        "
+        .parse::<Grid<10>>()
+        .expect("input is ok");
+
+        let mut count = 0;
+        input.evolve_counting_flashes_n_times(&mut count, 10);
+        assert_eq!(count, 204);
+
+        input.evolve_counting_flashes_n_times(&mut count, 100 - 10);
+        assert_eq!(count, 1656);
     }
 }
