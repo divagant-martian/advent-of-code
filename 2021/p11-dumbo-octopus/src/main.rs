@@ -19,6 +19,7 @@ fn main() {
     let mut count = 0;
     input.evolve_counting_flashes_n_times(&mut count, 100);
     println!("Flashes after 100: {}", count);
+    println!("Sync steps: {}", 100 + input.evolve_until_synchronized());
 }
 
 #[derive(PartialEq, Eq)]
@@ -162,6 +163,21 @@ impl<const N: usize> Grid<N> {
     fn evolve_counting_flashes_n_times(&mut self, count: &mut usize, times: usize) {
         for _ in 0..times {
             self.evolve_counting_flashes(count)
+        }
+    }
+
+    fn is_synchronized(&self) -> bool {
+        self.octopuses.iter().all(|row| row.iter().all(|&n| n == 0))
+    }
+
+    fn evolve_until_synchronized(&mut self) -> usize {
+        let mut steps = 0;
+        loop {
+            self.evolve();
+            steps += 1;
+            if self.is_synchronized() {
+                return steps;
+            }
         }
     }
 }
@@ -379,5 +395,25 @@ mod tests {
 
         input.evolve_counting_flashes_n_times(&mut count, 100 - 10);
         assert_eq!(count, 1656);
+    }
+
+    #[test]
+    fn test_synchronizaed() {
+        let mut input = "
+            5483143223
+            2745854711
+            5264556173
+            6141336146
+            6357385478
+            4167524645
+            2176841721
+            6882881134
+            4846848554
+            5283751526
+        "
+        .parse::<Grid<10>>()
+        .expect("input is ok");
+
+        assert_eq!(input.evolve_until_synchronized(), 195);
     }
 }
