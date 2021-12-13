@@ -71,19 +71,21 @@ impl std::fmt::Display for Paper {
                 if self.dots.contains(&(x, y)) {
                     // Full point
                     repr.push('█');
+                    repr.push('█');
                     continue;
                 }
                 let mut pushed = false;
-                for (maybe_x, maybe_y, char) in [
-                    (x_right, y_up, '◥'),
-                    (x_right, y_down, '◢'),
-                    (x_left, y_up, '◤'),
-                    (x_left, y_down, '◣'),
+                for (maybe_x, maybe_y, char1, char2) in [
+                    (x_right, y_up, ' ','◥'),
+                    (x_right, y_down, ' ','◢'),
+                    (x_left, y_up, '◤', ' '),
+                    (x_left, y_down, '◣', ' '),
                 ] {
                     if let Some(xn) = maybe_x {
                         if let Some(yn) = maybe_y {
                             if self.dots.contains(&(x, yn)) && self.dots.contains(&(xn, y)) {
-                                repr.push(char);
+                                repr.push(char1);
+                                repr.push(char2);
                                 pushed = true;
                                 break;
                             }
@@ -92,6 +94,7 @@ impl std::fmt::Display for Paper {
                 }
 
                 if !pushed {
+                    repr.push(' ');
                     repr.push(' ');
                 }
             }
