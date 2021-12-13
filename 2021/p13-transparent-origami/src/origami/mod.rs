@@ -64,11 +64,34 @@ impl std::fmt::Display for Paper {
         let mut repr = String::with_capacity((max_x - min_x) * (1 + max_y - min_y));
         for y in min_y..=max_y {
             for x in min_x..=max_x {
+                let x_right = x.checked_add(1);
+                let x_left = x.checked_sub(1);
+                let y_up = y.checked_sub(1);
+                let y_down = y.checked_add(1);
                 if self.dots.contains(&(x, y)) {
+                    // Full point
                     repr.push('█');
-                    repr.push('█');
-                } else {
-                    repr.push(' ');
+                    continue;
+                }
+                let mut pushed = false;
+                for (maybe_x, maybe_y, char) in [
+                    (x_right, y_up, '◥'),
+                    (x_right, y_down, '◢'),
+                    (x_left, y_up, '◤'),
+                    (x_left, y_down, '◣'),
+                ] {
+                    if let Some(xn) = maybe_x {
+                        if let Some(yn) = maybe_y {
+                            if self.dots.contains(&(x, yn)) && self.dots.contains(&(xn, y)) {
+                                repr.push(char);
+                                pushed = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if !pushed {
                     repr.push(' ');
                 }
             }
