@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{hash_map::Entry, HashMap};
 
 use sqr::Sqr;
 
@@ -50,28 +50,17 @@ impl<const N: usize> Cave<N> {
             visited: bool,
         }
 
+        let mut queue = vec![(0, 0)];
+
         let mut node_info: HashMap<_, _> = HashMap::default();
         node_info.insert((0, 0), PosInfo::default());
 
-        while let Some((&pos, info)) = {
-            node_info
-                .iter_mut()
-                .filter(|(_pos, info)| !info.visited)
-                .min_by_key(|(_pos, risk)| risk.best_known_risk)
-        } {
+        while let Some(pos) = queue.pop() {
+            let info = node_info.get_mut(&pos).unwrap();
             let my_risk = info.best_known_risk;
             info.visited = true;
 
-            #[allow(unreachable_code)]
             if pos == goal {
-                // let mut current = goal;
-                // while current != (0, 0) {
-                //     let current_info = node_info[&current];
-                //     println!("Current: [{:?}], {:?}", current, current_info);
-                //
-                //     current = current_info.pred;
-                // }
-
                 return my_risk;
             }
 
@@ -91,16 +80,32 @@ impl<const N: usize> Cave<N> {
                     risk
                 };
                 let risk_using_self = my_risk + node_risk;
-                let node = node_info.entry(n).or_insert_with(|| PosInfo {
-                    best_known_risk: risk_using_self,
-                    pred: pos,
-                    visited: false,
-                });
-                if !node.visited {
-                    if node.best_known_risk > risk_using_self {
-                        node.best_known_risk = node.best_known_risk.min(risk_using_self);
-                        node.pred = pos;
+                let insert = match node_info.entry(n) {
+                    Entry::Occupied(mut entry) => {
+                        let info = entry.get_mut();
+                        if info.best_known_risk > risk_using_self {
+                            info.best_known_risk = risk_using_self;
+                            info.pred = pos;
+                            true
+                        } else {
+                            false
+                        }
                     }
+                    Entry::Vacant(entry) => {
+                        entry.insert(PosInfo {
+                            best_known_risk: risk_using_self,
+                            pred: pos,
+                            visited: false,
+                        });
+                        true
+                    }
+                };
+                if insert {
+                    let (Ok(x) | Err(x)) = queue
+                        .binary_search_by_key(&(u32::max_value() - risk_using_self), |pos| {
+                            u32::max_value() - node_info[pos].best_known_risk
+                        });
+                    queue.insert(x, n)
                 }
             }
         }
