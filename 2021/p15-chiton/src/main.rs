@@ -1,8 +1,5 @@
-use std::collections::VecDeque;
-
 use sqr::Sqr;
 
-#[allow(dead_code)]
 impl<const N: usize> Cave<N> {
     pub fn least_risky_path(&self) -> RiskLevel {
         #[derive(Default, Clone, Copy)]
@@ -14,26 +11,14 @@ impl<const N: usize> Cave<N> {
         let mut node_info: Sqr<PosInfo, N> = Sqr::default();
         node_info[(0, 0)].best_known_risk = Some(0);
 
-        let mut unvisited_least_risk = Some(((0, 0), 0));
-
-        let mut visited = 0;
-        while let Some((pos, _)) = {
+        while let Some((pos, info)) = {
             node_info
                 .iter()
-                .enumerate()
-                .flat_map(|(y, row)| {
-                    row.iter().enumerate().filter_map(move |(x, info)| {
-                        if !info.visited {
-                            Some(((y, x), info.best_known_risk))
-                        } else {
-                            None
-                        }
-                    })
-                })
-                .min_by_key(|(_pos, risk)| risk.unwrap_or(u32::max_value()))
+                .filter(|(_pos, info)| !info.visited)
+                .min_by_key(|(_pos, risk)| risk.best_known_risk.unwrap_or(u32::max_value()))
         } {
-            // Visited nodes have a known best path
-            let my_risk = node_info[pos].best_known_risk.unwrap();
+            // Must have a known best path
+            let my_risk = info.best_known_risk.unwrap();
 
             if pos == (N - 1, N - 1) {
                 return my_risk;
@@ -49,10 +34,9 @@ impl<const N: usize> Cave<N> {
                 }
             }
             node_info[pos].visited = true;
-            visited += 1;
         }
-        assert_eq!(visited, N * N);
-        node_info[(N - 1, N - 1)].best_known_risk.unwrap()
+
+        panic!("Unreachable end node")
     }
 
     pub fn neighbors(pos: &(usize, usize)) -> impl Iterator<Item = (usize, usize)> + '_ {

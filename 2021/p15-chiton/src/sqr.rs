@@ -1,17 +1,16 @@
 #[derive(PartialEq, Eq, Debug)]
 pub struct Sqr<T, const N: usize>([[T; N]; N]);
 
-impl<T, const N: usize> std::ops::Deref for Sqr<T, N> {
-    type Target = [[T; N]; N];
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
 impl<T, const N: usize> Sqr<T, N> {
     pub const fn new(array: [[T; N]; N]) -> Self {
         Self(array)
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = ((usize, usize), &T)> + '_ {
+        self.0
+            .iter()
+            .enumerate()
+            .flat_map(|(y, row)| row.iter().enumerate().map(move |(x, t)| ((y, x), t)))
     }
 }
 
