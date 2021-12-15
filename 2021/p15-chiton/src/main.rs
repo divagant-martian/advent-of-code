@@ -57,7 +57,6 @@ impl<const N: usize> Cave<N> {
                 .filter(|(_pos, info)| !info.visited)
                 .min_by_key(|(_pos, risk)| risk.best_known_risk)
         } {
-            // Must have a known best path
             let my_risk = info.best_known_risk;
             info.visited = true;
 
@@ -65,8 +64,22 @@ impl<const N: usize> Cave<N> {
                 return my_risk;
             }
 
-            for n in Cave::<N>::neighbors(&pos, 1) {
-                let risk_using_self = my_risk + self[n];
+            for n in Cave::<N>::neighbors(&pos, tiles) {
+                let real_n = (n.0 % N, n.1 % N);
+                let node_risk = {
+                    let mut risk = self[real_n];
+                    let extra_movements = n.0 / N + n.1 / N;
+                    for _ in 0..extra_movements {
+                        // increases by one
+                        risk += 1;
+                        // but gets wraped
+                        if risk > 9 {
+                            risk = 1
+                        }
+                    }
+                    risk
+                };
+                let risk_using_self = my_risk + node_risk;
                 let node = node_info.entry(n).or_insert_with(|| PosInfo {
                     best_known_risk: risk_using_self,
                     visited: false,
