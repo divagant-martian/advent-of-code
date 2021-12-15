@@ -42,9 +42,11 @@ impl<const N: usize> Cave<N> {
     }
 
     pub fn least_risky_path_tiled(&self, tiles: usize) -> RiskLevel {
-        #[derive(Default, Clone, Copy)]
+        let goal = (N * tiles - 1, N * tiles - 1);
+        #[derive(Default, Clone, Copy, Debug)]
         struct PosInfo {
             best_known_risk: RiskLevel,
+            pred: (usize, usize),
             visited: bool,
         }
 
@@ -60,7 +62,16 @@ impl<const N: usize> Cave<N> {
             let my_risk = info.best_known_risk;
             info.visited = true;
 
-            if pos == (N - 1, N - 1) {
+            #[allow(unreachable_code)]
+            if pos == goal {
+                // let mut current = goal;
+                // while current != (0, 0) {
+                //     let current_info = node_info[&current];
+                //     println!("Current: [{:?}], {:?}", current, current_info);
+                //
+                //     current = current_info.pred;
+                // }
+
                 return my_risk;
             }
 
@@ -82,10 +93,14 @@ impl<const N: usize> Cave<N> {
                 let risk_using_self = my_risk + node_risk;
                 let node = node_info.entry(n).or_insert_with(|| PosInfo {
                     best_known_risk: risk_using_self,
+                    pred: pos,
                     visited: false,
                 });
                 if !node.visited {
-                    node.best_known_risk = node.best_known_risk.min(risk_using_self)
+                    if node.best_known_risk > risk_using_self {
+                        node.best_known_risk = node.best_known_risk.min(risk_using_self);
+                        node.pred = pos;
+                    }
                 }
             }
         }
@@ -150,8 +165,9 @@ impl<const N: usize> std::str::FromStr for Cave<N> {
 fn main() {
     let input = std::fs::read_to_string("data/input").expect("Input file is present");
     let cave: Cave<100> = input.parse().expect("Input is ok");
-    assert_eq!(cave.least_risky_path(), 619);
-    assert_eq!(cave.least_risky_path_tiled(1), 619);
+    // assert_eq!(cave.least_risky_path(), 619);
+    // assert_eq!(cave.least_risky_path_tiled(1), 619);
+    dbg!(cave.least_risky_path_tiled(5));
 }
 
 #[cfg(test)]
@@ -159,7 +175,7 @@ mod tests {
     use super::*;
 
     const TEST_INPUT: &str = "
-        0163751742
+        1163751742
         1381373672
         2136511328
         3694931569
@@ -167,12 +183,12 @@ mod tests {
         1319128137
         1359912421
         3125421639
-        1293138520
-        2311944582
+        1293138521
+        2311944581
     ";
 
     const TEST_CAVE: Cave<10> = Sqr::new([
-        [0, 1, 6, 3, 7, 5, 1, 7, 4, 2],
+        [1, 1, 6, 3, 7, 5, 1, 7, 4, 2],
         [1, 3, 8, 1, 3, 7, 3, 6, 7, 2],
         [2, 1, 3, 6, 5, 1, 1, 3, 2, 8],
         [3, 6, 9, 4, 9, 3, 1, 5, 6, 9],
@@ -180,8 +196,8 @@ mod tests {
         [1, 3, 1, 9, 1, 2, 8, 1, 3, 7],
         [1, 3, 5, 9, 9, 1, 2, 4, 2, 1],
         [3, 1, 2, 5, 4, 2, 1, 6, 3, 9],
-        [1, 2, 9, 3, 1, 3, 8, 5, 2, 0],
-        [2, 3, 1, 1, 9, 4, 4, 5, 8, 2],
+        [1, 2, 9, 3, 1, 3, 8, 5, 2, 1],
+        [2, 3, 1, 1, 9, 4, 4, 5, 8, 1],
     ]);
 
     #[test]
@@ -201,5 +217,6 @@ mod tests {
     fn test_example() {
         assert_eq!(TEST_CAVE.least_risky_path(), 40);
         assert_eq!(TEST_CAVE.least_risky_path_tiled(1), 40);
+        assert_eq!(TEST_CAVE.least_risky_path_tiled(5), 315);
     }
 }
