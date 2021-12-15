@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use sqr::Sqr;
 
 impl<const N: usize> Cave<N> {
@@ -34,6 +36,45 @@ impl<const N: usize> Cave<N> {
                 }
             }
             node_info[pos].visited = true;
+        }
+
+        panic!("Unreachable end node")
+    }
+
+    pub fn least_risky_path_tiled(&self, tiles: usize) -> RiskLevel {
+        #[derive(Default, Clone, Copy)]
+        struct PosInfo {
+            best_known_risk: RiskLevel,
+            visited: bool,
+        }
+
+        let mut node_info: HashMap<_, _> = HashMap::default();
+        node_info.insert((0, 0), PosInfo::default());
+
+        while let Some((&pos, info)) = {
+            node_info
+                .iter_mut()
+                .filter(|(_pos, info)| !info.visited)
+                .min_by_key(|(_pos, risk)| risk.best_known_risk)
+        } {
+            // Must have a known best path
+            let my_risk = info.best_known_risk;
+            info.visited = true;
+
+            if pos == (N - 1, N - 1) {
+                return my_risk;
+            }
+
+            for n in Cave::<N>::neighbors(&pos, 1) {
+                let risk_using_self = my_risk + self[n];
+                let node = node_info.entry(n).or_insert_with(|| PosInfo {
+                    best_known_risk: risk_using_self,
+                    visited: false,
+                });
+                if !node.visited {
+                    node.best_known_risk = node.best_known_risk.min(risk_using_self)
+                }
+            }
         }
 
         panic!("Unreachable end node")
@@ -97,6 +138,7 @@ fn main() {
     let input = std::fs::read_to_string("data/input").expect("Input file is present");
     let cave: Cave<100> = input.parse().expect("Input is ok");
     assert_eq!(cave.least_risky_path(), 619);
+    assert_eq!(cave.least_risky_path_tiled(1), 619);
 }
 
 #[cfg(test)]
@@ -145,5 +187,6 @@ mod tests {
     #[test]
     fn test_example() {
         assert_eq!(TEST_CAVE.least_risky_path(), 40);
+        assert_eq!(TEST_CAVE.least_risky_path_tiled(1), 40);
     }
 }
