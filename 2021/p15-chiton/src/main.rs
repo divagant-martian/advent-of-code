@@ -165,8 +165,7 @@ impl<const N: usize> std::str::FromStr for Cave<N> {
 fn main() {
     let input = std::fs::read_to_string("data/input").expect("Input file is present");
     let cave: Cave<100> = input.parse().expect("Input is ok");
-    // assert_eq!(cave.least_risky_path(), 619);
-    // assert_eq!(cave.least_risky_path_tiled(1), 619);
+    assert_eq!(dbg!(cave.least_risky_path()), 619);
     dbg!(cave.least_risky_path_tiled(5));
 }
 
