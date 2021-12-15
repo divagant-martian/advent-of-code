@@ -24,7 +24,7 @@ impl<const N: usize> Cave<N> {
                 return my_risk;
             }
 
-            for n in Cave::<N>::neighbors(&pos) {
+            for n in Cave::<N>::neighbors(&pos, 1) {
                 if !node_info[n].visited {
                     let risk_using_self = my_risk + self[n];
                     node_info[n].best_known_risk = node_info[n]
@@ -39,7 +39,10 @@ impl<const N: usize> Cave<N> {
         panic!("Unreachable end node")
     }
 
-    pub fn neighbors(pos: &(usize, usize)) -> impl Iterator<Item = (usize, usize)> + '_ {
+    pub fn neighbors(
+        pos: &(usize, usize),
+        tiles: usize,
+    ) -> impl Iterator<Item = (usize, usize)> + '_ {
         let (y, x) = *pos;
         [
             (0, 1), /* (-1, 0) up    */
@@ -51,7 +54,7 @@ impl<const N: usize> Cave<N> {
         .filter_map(move |(y_delta, x_delta)| {
             let ny = (y + y_delta).checked_sub(1)?;
             let nx = (x + x_delta).checked_sub(1)?;
-            if ny < N && nx < N {
+            if ny < N * tiles && nx < N * tiles {
                 Some((ny, nx))
             } else {
                 None
@@ -134,7 +137,7 @@ mod tests {
     #[test]
     fn test_neighbors() {
         assert_eq!(
-            Cave::<10>::neighbors(&(0, 0)).collect::<Vec<_>>(),
+            Cave::<10>::neighbors(&(0, 0), 1).collect::<Vec<_>>(),
             vec![(0, 1), (1, 0)]
         );
     }
