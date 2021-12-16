@@ -29,7 +29,12 @@ pub struct Packet {
     pub payload: Payload,
 }
 
-pub fn decode(bits: &mut impl CountingIterator<bool>) -> Result<Packet, Error> {
+pub fn decode(input: &str) -> Result<Packet, Error> {
+    let mut bits = input_iter(input);
+    decode_inner(&mut bits)
+}
+
+fn decode_inner(bits: &mut impl CountingIterator<bool>) -> Result<Packet, Error> {
     let mut version = 0;
     for _ in 0..3 {
         version *= 2;
@@ -86,7 +91,7 @@ impl Payload {
             }
             let mut packets = Vec::with_capacity(subpacket_count);
             while packets.len() < subpacket_count {
-                packets.push(decode(bits)?);
+                packets.push(decode_inner(bits)?);
             }
 
             packets
@@ -102,7 +107,7 @@ impl Payload {
 
             let mut packets = Vec::new();
             while bits.calls() < currently_used + total_length {
-                packets.push(decode(bits)?);
+                packets.push(decode_inner(bits)?);
             }
 
             packets
@@ -129,7 +134,7 @@ mod tests {
     #[test]
     fn test_decide_binary() {
         assert_eq!(
-            decode(&mut input_iter("D2FE28")),
+            decode_inner(&mut input_iter("D2FE28")),
             Ok(Packet {
                 version: 6,
                 payload: Payload::Base(2021)
@@ -140,7 +145,7 @@ mod tests {
     #[test]
     fn test_recursive() {
         assert_eq!(
-            decode(&mut input_iter("38006F45291200")),
+            decode_inner(&mut input_iter("38006F45291200")),
             Ok(Packet {
                 version: 1,
                 payload: Payload::Recur(vec![
