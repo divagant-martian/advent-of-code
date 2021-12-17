@@ -2,8 +2,8 @@ use crate::decode::Packet;
 
 mod counting_iter;
 mod decode;
-mod payload;
 mod hexa;
+mod payload;
 
 pub type Error = &'static str;
 

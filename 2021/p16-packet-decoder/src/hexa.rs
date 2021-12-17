@@ -1,5 +1,5 @@
 pub fn to_binary(c: char) -> impl Iterator<Item = bool> {
-    match c {
+    match c.to_ascii_uppercase() {
         '0' => [false, false, false, false].into_iter(),
         '1' => [false, false, false, true].into_iter(),
         '2' => [false, false, true, false].into_iter(),
