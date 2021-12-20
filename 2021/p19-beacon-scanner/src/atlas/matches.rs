@@ -22,6 +22,9 @@ impl Scanner {
         None
     }
 
+    pub fn transformed(&mut self, transform: impl Fn(Point) -> Point + Copy) {
+    }
+
     pub fn transform(&self, transform: impl Fn(Point) -> Point + Copy) -> Self {
         let beacons = self
             .beacons
