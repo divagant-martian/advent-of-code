@@ -1,6 +1,6 @@
-use std::str::FromStr;
+use std::{collections::BTreeSet, str::FromStr};
 
-use super::{Error, Scanner, Point};
+use super::{Error, Point, Scanner};
 
 impl FromStr for Point {
     type Err = Error;
@@ -30,8 +30,13 @@ impl FromStr for Scanner {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut lines = s.trim().lines();
         assert!(lines.next().unwrap().starts_with("---"));
-        let beacons = lines.map(Point::from_str).collect::<Result<Vec<Point>, Error>>()?;
-        Ok(Scanner { beacons })
+        let beacons = lines
+            .map(Point::from_str)
+            .collect::<Result<BTreeSet<Point>, Error>>()?;
+        Ok(Scanner {
+            beacons,
+            origin: Point::default(),
+        })
     }
 }
 
@@ -41,7 +46,10 @@ mod tests {
 
     #[test]
     fn test_parse_point() {
-        assert_eq!(Point::from_str("  5,6,-4  "), Ok(Point { x: 5, y: 6, z: -4 }));
+        assert_eq!(
+            Point::from_str("  5,6,-4  "),
+            Ok(Point { x: 5, y: 6, z: -4 })
+        );
     }
 
     #[test]

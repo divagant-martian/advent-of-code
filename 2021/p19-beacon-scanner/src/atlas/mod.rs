@@ -1,5 +1,14 @@
+#![allow(warnings)]
+
+use std::collections::BTreeSet;
+
+mod matches;
+mod ops;
+mod parse;
+mod transform;
+
 pub type Error = &'static str;
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, PartialOrd, Ord, Default)]
 pub struct Point {
     x: isize,
     y: isize,
@@ -12,36 +21,14 @@ impl Point {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Scanner {
-    beacons: Vec<Point>,
+    origin: Point,
+    beacons: BTreeSet<Point>,
 }
-#[allow(dead_code)]
-const TRANSFORMATIONS: &[fn(Point) -> Point] = &[
-    |p| p,
-    |Point { x, y, z }| Point::new(x, -z, y),
-    |Point { x, y, z }| Point::new(x, -y, -z),
-    |Point { x, y, z }| Point::new(x, z, -y),
-    |Point { x, y, z }| Point::new(-y, x, z),
-    |Point { x, y, z }| Point::new(z, x, y),
-    |Point { x, y, z }| Point::new(y, x, -z),
-    |Point { x, y, z }| Point::new(-z, x, -y),
-    |Point { x, y, z }| Point::new(-x, -y, z),
-    |Point { x, y, z }| Point::new(-x, -z, -y),
-    |Point { x, y, z }| Point::new(-x, y, -z),
-    |Point { x, y, z }| Point::new(-x, z, y),
-    |Point { x, y, z }| Point::new(y, -x, z),
-    |Point { x, y, z }| Point::new(z, -x, -y),
-    |Point { x, y, z }| Point::new(-y, -x, -z),
-    |Point { x, y, z }| Point::new(-z, -x, y),
-    |Point { x, y, z }| Point::new(-z, y, x),
-    |Point { x, y, z }| Point::new(y, z, x),
-    |Point { x, y, z }| Point::new(z, -y, x),
-    |Point { x, y, z }| Point::new(-y, -z, x),
-    |Point { x, y, z }| Point::new(-z, -y, -x),
-    |Point { x, y, z }| Point::new(-y, z, -x),
-    |Point { x, y, z }| Point::new(z, y, -x),
-    |Point { x, y, z }| Point::new(y, -z, -x),
-];
 
-mod parse;
+impl Scanner {
+    pub fn len(&self) -> usize {
+        self.beacons.len()
+    }
+}

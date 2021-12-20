@@ -1,0 +1,28 @@
+use super::Point;
+
+pub const TRANSFORMATIONS: [fn(Point) -> Point; 24] = [
+    |p| p,
+    |Point { x, y, z }| Point::new(x, -z, y),
+    |Point { x, y, z }| Point::new(x, -y, -z),
+    |Point { x, y, z }| Point::new(x, z, -y),
+    |Point { x, y, z }| Point::new(-y, x, z),
+    |Point { x, y, z }| Point::new(z, x, y),
+    |Point { x, y, z }| Point::new(y, x, -z),
+    |Point { x, y, z }| Point::new(-z, x, -y),
+    |Point { x, y, z }| Point::new(-x, -y, z),
+    |Point { x, y, z }| Point::new(-x, -z, -y),
+    |Point { x, y, z }| Point::new(-x, y, -z),
+    |Point { x, y, z }| Point::new(-x, z, y),
+    |Point { x, y, z }| Point::new(y, -x, z),
+    |Point { x, y, z }| Point::new(z, -x, -y),
+    |Point { x, y, z }| Point::new(-y, -x, -z),
+    |Point { x, y, z }| Point::new(-z, -x, y),
+    |Point { x, y, z }| Point::new(-z, y, x),
+    |Point { x, y, z }| Point::new(y, z, x),
+    |Point { x, y, z }| Point::new(z, -y, x),
+    |Point { x, y, z }| Point::new(-y, -z, x),
+    |Point { x, y, z }| Point::new(-z, -y, -x),
+    |Point { x, y, z }| Point::new(-y, z, -x),
+    |Point { x, y, z }| Point::new(z, y, -x),
+    |Point { x, y, z }| Point::new(y, -z, -x),
+];
