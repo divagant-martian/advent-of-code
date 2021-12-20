@@ -16,17 +16,19 @@ pub trait CountingIterator<Item>: Iterator<Item = Item> {
     fn calls(&self) -> usize;
 }
 
-impl<T: Iterator<Item = Item>, Item> CountingIterator<Item> for CountingIter<T> {
+impl<T: Iterator<Item = Item>, Item: std::fmt::Debug> CountingIterator<Item> for CountingIter<T> {
     fn calls(&self) -> usize {
         self.next_calls
     }
 }
 
-impl<T: Iterator> Iterator for CountingIter<T> {
+impl<T: Iterator<Item = I>, I: std::fmt::Debug> Iterator for CountingIter<T> {
     type Item = <T as Iterator>::Item;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next_calls += 1;
-        self.iter.next()
+        let item = self.iter.next();
+        let item = dbg!((item.unwrap(), self.next_calls)).0;
+        Some(item)
     }
 }

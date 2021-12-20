@@ -47,7 +47,7 @@ impl Payload {
                     subpacket_count += 1;
                 }
             }
-            let mut packets = Vec::with_capacity(subpacket_count);
+            let mut packets = Vec::with_capacity(dbg!(subpacket_count));
             while packets.len() < subpacket_count {
                 packets.push(Packet::decode_inner(bits)?);
             }
@@ -61,6 +61,7 @@ impl Payload {
                     total_length += 1;
                 }
             }
+            dbg!(&total_length);
             let currently_used = bits.calls();
 
             let mut packets = Vec::new();
