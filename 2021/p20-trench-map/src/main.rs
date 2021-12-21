@@ -32,14 +32,14 @@ impl std::ops::DerefMut for Points {
 pub type Error = &'static str;
 
 fn main() {
-    // let input = std::fs::read_to_string("data/input").unwrap();
+    let input = std::fs::read_to_string("data/input").unwrap();
+    // let input = std::fs::read_to_string("data/example").unwrap();
     // let input = std::fs::read_to_string("data/example2").unwrap();
     // let input = std::fs::read_to_string("data/chris").unwrap();
-    let input = std::fs::read_to_string("data/empty").unwrap();
+    // let input = std::fs::read_to_string("data/empty").unwrap();
+    // let input = std::fs::read_to_string("data/on_1_0_or_all").unwrap();
     let (code, mut points) = parse::parse(&input).unwrap();
-    println!("Quedaron: {}:\n{}", points.len(), points);
-    points.evolve(&code);
-    println!("Quedaron: {}:\n{}", points.len(), points);
-    points.evolve(&code);
-    println!("Quedaron: {}:\n{}", points.len(), points);
+    for _ in 0..50 {
+        points.evolve(&code);
+    }
 }

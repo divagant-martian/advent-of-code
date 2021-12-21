@@ -47,14 +47,16 @@ impl FromStr for Points {
                 }
             }
         }
-        Ok(Points {
+        let points = Points {
             points,
             min_x,
             min_y,
             max_x,
             max_y,
             horizon_lit: false,
-        })
+        };
+        println!("{}", points);
+        Ok(points)
     }
 }
 
@@ -74,7 +76,7 @@ mod tests {
             ..###
         ";
         let (code, points) = parse(input).unwrap();
-        assert_eq!(code[0], false);
+        assert!(!code[0]);
         assert_eq!(points.len(), 10);
     }
 }
