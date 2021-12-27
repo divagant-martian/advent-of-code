@@ -63,7 +63,8 @@ fn expand() -> Vec<[isize; 14]> {
     } {
         let [a, b, c] = CONSTANTS[13 - known_ws.len()];
         (0..=10000000).into_par_iter().for_each(|z| {
-            for w in 1..=9 {
+            let range = if known_ws.len() == 13 { 1..=7 } else { 1..=9 };
+            for w in range {
                 if program(a, b, c, z, w) == searched_z {
                     let mut to_expand = known_ws.clone();
                     to_expand.push(w);
