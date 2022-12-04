@@ -27,7 +27,7 @@ impl Outcome {
     pub fn score(&self) -> usize {
         match self {
             Outcome::Draw(shape) => 3 + shape.score(),
-            Outcome::Lost(shape) => 0 + shape.score(),
+            Outcome::Lost(shape) => shape.score(),
             Outcome::Won(shape) => 6 + shape.score(),
         }
     }

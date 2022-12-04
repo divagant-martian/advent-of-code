@@ -16,7 +16,7 @@ where
         let ra1 = ra.end();
         let rb0 = rb.start();
         let rb1 = rb.end();
-        (ra.contains(&rb0) && ra.contains(&rb1)) || (rb.contains(&ra0) && rb.contains(&ra1))
+        (ra.contains(rb0) && ra.contains(rb1)) || (rb.contains(ra0) && rb.contains(ra1))
     })
     .count()
 }
@@ -26,7 +26,7 @@ fn overlaps(ra: &RangeInclusive<u32>, rb: &RangeInclusive<u32>) -> bool {
     let ra1 = ra.end();
     let rb0 = rb.start();
     let rb1 = rb.end();
-    ra.contains(&rb0) || ra.contains(&rb1) || rb.contains(&ra0) || rb.contains(&ra1)
+    ra.contains(rb0) || ra.contains(rb1) || rb.contains(ra0) || rb.contains(ra1)
 }
 
 fn problem_2<T>(data: T) -> usize

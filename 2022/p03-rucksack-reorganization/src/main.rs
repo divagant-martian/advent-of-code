@@ -6,7 +6,7 @@ struct Item(char);
 impl Item {
     #[track_caller]
     pub fn priority(&self) -> u8 {
-        let adjustment: u8 = self.0.is_uppercase().then_some(58).unwrap_or(0);
+        let adjustment: u8 = if self.0.is_uppercase() { 58 } else { 0 };
         self.0 as u8 + adjustment - 96
     }
 }
