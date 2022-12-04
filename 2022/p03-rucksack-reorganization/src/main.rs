@@ -69,6 +69,7 @@ fn problem_2() {
                 .next()
                 .expect("There must be a common badge");
             accum_priority += common_item.priority() as usize;
+            println!("{accum_priority} {common_item:?}");
             seen_items_in_group.clear();
         }
     }
