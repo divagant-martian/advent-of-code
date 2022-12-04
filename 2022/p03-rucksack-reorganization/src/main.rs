@@ -18,7 +18,7 @@ fn main() {
 fn problem_1() {
     let file_name = std::env::args().nth(1).expect("Needs a file");
     let data = std::fs::read_to_string(file_name).expect("File exists");
-    let items: Vec<_> = data
+    let misplaced: usize = data
         .lines()
         .map(|l| {
             let mut rucksack = l.chars().map(Item).collect::<Vec<_>>();
@@ -26,9 +26,6 @@ fn problem_1() {
             let second_compartment = rucksack.split_off(size / 2);
             (rucksack, second_compartment)
         })
-        .collect();
-    let misplaced: usize = items
-        .into_iter()
         .map(|(first, second)| {
             let first: HashSet<Item> = HashSet::from_iter(first.into_iter());
             let second = HashSet::from_iter(second.into_iter());
