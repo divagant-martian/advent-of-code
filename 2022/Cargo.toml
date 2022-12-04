@@ -1,0 +1,9 @@
+[workspace]
+members = [
+    "p01-calorie-counting",
+    "p02-rock-paper-scissors",
+    "p03-rucksack-reorganization"
+]
+
+[workspace.dependencies]
+clap = { version = "4.0.29", features = [ "derive" ] }
