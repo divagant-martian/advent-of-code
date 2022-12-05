@@ -2,16 +2,6 @@ use std::collections::VecDeque;
 
 use crate::{Move, Stack};
 
-pub const EXAMPLE: &str = "    [D]    
-[N] [C]    
-[Z] [M] [P]
- 1   2   3 
-
-move 1 from 2 to 1
-move 3 from 1 to 3
-move 2 from 2 to 1
-move 1 from 1 to 2";
-
 pub fn parse_data(data: &str) -> Result<(Vec<Stack>, Vec<Move>), &'static str> {
     let (stack_data, instructions) = data
         .split_once("\n\n")

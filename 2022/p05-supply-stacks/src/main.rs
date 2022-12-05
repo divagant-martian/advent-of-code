@@ -12,7 +12,7 @@ pub struct Move {
 
 pub type Stack = VecDeque<char>;
 
-fn problem_1(stacks: &[Stack]) -> String {
+fn msg(stacks: &[Stack]) -> String {
     stacks
         .iter()
         .map(|stack| stack.back().expect("no stack is empty?"))
@@ -23,6 +23,9 @@ fn main() {
     let file_name = std::env::args().nth(1).expect("Needs a file name");
     let file_contents = std::fs::read_to_string(file_name).expect("File exists");
     let (mut stacks, instructions) = parse::parse_data(&file_contents).unwrap();
-    execute::execute(&mut stacks, &instructions);
-    dbg!(problem_1(&stacks));
+    let mut stacks_2 = stacks.clone();
+    execute::execute_1(&mut stacks, &instructions);
+    dbg!(msg(&stacks));
+    execute::execute_2(&mut stacks_2, &instructions);
+    dbg!(msg(&stacks_2));
 }
