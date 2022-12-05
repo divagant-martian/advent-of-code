@@ -12,6 +12,7 @@ impl Item {
 }
 
 fn main() {
+    problem_1();
     problem_2()
 }
 

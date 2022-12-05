@@ -153,6 +153,10 @@ name = "p04-camp-cleanup"
 version = "0.1.0"
 
 [[package]]
+name = "p05-supply-stacks"
+version = "0.1.0"
+
+[[package]]
 name = "proc-macro-error"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -4,6 +4,8 @@ fn main() {
     let file_name = std::env::args().nth(1).expect("Provide a file name");
     let file_contents = std::fs::read_to_string(file_name).expect("File exists");
     let data = parse_data(&file_contents);
+    dbg!(problem_1(data));
+    let data = parse_data(&file_contents);
     dbg!(problem_2(data));
 }
 

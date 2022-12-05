@@ -3,7 +3,8 @@ members = [
     "p01-calorie-counting",
     "p02-rock-paper-scissors",
     "p03-rucksack-reorganization",
-    "p04-camp-cleanup"
+    "p04-camp-cleanup",
+    "p05-supply-stacks"
 ]
 
 [workspace.dependencies]
