@@ -5,7 +5,8 @@ members = [
     "p03-rucksack-reorganization",
     "p04-camp-cleanup",
     "p05-supply-stacks",
-    "p06-tuning-trouble"
+    "p06-tuning-trouble",
+    "p07-no-space-left-on-device",
 ]
 
 [workspace.dependencies]
