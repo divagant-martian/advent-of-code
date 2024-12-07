@@ -16,33 +16,14 @@ pub fn main() !void {
 
     var snd_arr = std.ArrayList(u32).init(allocator);
     defer snd_arr.deinit();
+    var x: usize = 1;
 
     while (lines.next()) |line| {
         var str_ints = std.mem.tokenizeScalar(u8, line, ' ');
 
-        const fst = str_ints.next() orelse unreachable;
-        const snd = str_ints.next() orelse unreachable;
-
-        const fst_int = try std.fmt.parseInt(u32, fst, 10);
-        const snd_int = try std.fmt.parseInt(u32, snd, 10);
-
-        const fst_idx = std.sort.upperBound(
-            u32,
-            fst_int,
-            fst_arr.items,
-            {},
-            comptime std.sort.asc(u32),
-        );
-        try fst_arr.insert(fst_idx, fst_int);
-
-        const snd_idx = std.sort.upperBound(
-            u32,
-            snd_int,
-            snd_arr.items,
-            {},
-            comptime std.sort.asc(u32),
-        );
-        try snd_arr.insert(snd_idx, snd_int);
+        x += 1;
+        try add_item(&str_ints, &fst_arr);
+        try add_item(&str_ints, &snd_arr);
     }
 
     var total: u32 = 0;
@@ -56,4 +37,18 @@ pub fn main() !void {
     }
 
     std.debug.print("{d}\n", .{total});
+}
+
+fn add_item(items: *std.mem.TokenIterator(u8, std.mem.DelimiterType.scalar), dst: *std.ArrayList(u32)) !void {
+    const item = items.next() orelse unreachable;
+    const number = try std.fmt.parseInt(u32, item, 10);
+    const idx = std.sort.upperBound(
+        u32,
+        number,
+        dst.items,
+        {},
+        comptime std.sort.asc(u32),
+    );
+
+    try dst.insert(idx, number);
 }
