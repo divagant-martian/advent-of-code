@@ -97,6 +97,7 @@ const Grid = struct {
 
         for (0..rows) |i| {
             for (0..self.cols) |j| {
+                _ = self.get(i, j).?;
                 const curr = self.find_xmas(i, j);
                 // if (curr > 0) {
                 // }
@@ -142,7 +143,7 @@ fn direction_char(delta_i: i8, delta_j: i8) []const u8 {
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
-    var file = try std.fs.cwd().openFile("debug", .{});
+    var file = try std.fs.cwd().openFile("input", .{});
     defer file.close();
 
     var buf_reader = std.io.bufferedReader(file.reader());
