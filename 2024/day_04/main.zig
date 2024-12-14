@@ -146,7 +146,36 @@ fn direction_char(delta_i: i8, delta_j: i8) []const u8 {
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
-    var file = try std.fs.cwd().openFile("input", .{});
+    var args = try std.process.argsWithAllocator(allocator);
+    defer args.deinit();
+
+    // process program name
+    _ = args.next().?;
+
+    var second_part = false;
+    if (args.next()) |part| {
+        if (std.mem.eql(u8, part, "a")) {
+            second_part = false;
+        } else if (std.mem.eql(u8, part, "b")) {
+            second_part = true;
+        } else {
+            std.log.err("parts a or b, you on drugs: {s}", .{part});
+            std.process.exit(1);
+        }
+    } else {
+        std.log.err("missing program part", .{});
+        std.process.exit(1);
+    }
+
+    var file_name: []const u8 = undefined;
+    if (args.next()) |name| {
+        file_name = name;
+    } else {
+        std.log.err("missing file name", .{});
+        std.process.exit(1);
+    }
+
+    var file = try std.fs.cwd().openFile(file_name, .{});
     defer file.close();
 
     var buf_reader = std.io.bufferedReader(file.reader());
@@ -155,7 +184,10 @@ pub fn main() !void {
     const grid = try Grid.new(data, allocator);
     defer grid.grid.deinit();
 
-    const total = grid.count_xmas();
-
-    std.debug.print("{d}\n", .{total});
+    if (second_part) {
+        std.log.err("part 2 is missing!", .{});
+    } else {
+        const total = grid.count_xmas();
+        std.log.info("{d}\n", .{total});
+    }
 }
