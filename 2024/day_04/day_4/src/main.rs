@@ -57,7 +57,7 @@ impl Grid {
         if (here != Xmas::x) || ((delta_i == 0) && (delta_j == 0)) {
             return false;
         }
-        let mut char_buf = vec!(Xmas::x);
+        let mut char_buf = vec![Xmas::x];
         for (needle, scalar) in [Xmas::m, Xmas::a, Xmas::s].into_iter().zip(1i8..) {
             if let Some(letter) = self.get_with_offset(i, j, delta_i * scalar, delta_j * scalar) {
                 if letter != needle {
@@ -77,10 +77,10 @@ impl Grid {
         let mut count: usize = 0;
         for delta_i in [-1, 0, 1] {
             for delta_j in [-1, 0, 1] {
-                if (delta_i, delta_j) != (-1, 0){
+                if (delta_i, delta_j) != (-1, 1) {
                     continue;
                 }
-// 
+                //
                 if self.is_xmas_in_direction(i, delta_i, j, delta_j) {
                     if count == 0 {
                         print!("({i}, {j}) ");
@@ -144,7 +144,7 @@ fn direction_char(delta_i: i8, delta_j: i8) -> &'static str {
 }
 
 fn main() -> anyhow::Result<()> {
-    let data = std::fs::read_to_string("input")?;
+    let data = std::fs::read_to_string("../debug")?;
 
     let grid = Grid::new(&data);
 
