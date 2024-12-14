@@ -37,6 +37,9 @@ const Grid = struct {
     }
 
     fn get(self: *const Grid, i: usize, j: usize) ?Xmas {
+        if (j >= self.cols) {
+            return null;
+        }
         const idx = i * self.cols + j;
         if (idx >= self.grid.items.len) {
             return null;
