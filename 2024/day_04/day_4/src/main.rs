@@ -20,7 +20,7 @@ impl Grid {
         while let Some(line) = lines.next() {
             let mut row_cols: usize = 0;
             for c in line.chars() {
-                let l: Xmas = match (c) {
+                let l: Xmas = match c {
                     'X' => Xmas::x,
                     'M' => Xmas::m,
                     'A' => Xmas::a,
@@ -30,7 +30,7 @@ impl Grid {
                 grid.push(l);
                 row_cols += 1;
             }
-            if ((cols != 0) && cols != row_cols) {
+            if (cols != 0) && cols != row_cols {
                 panic!("not a rentangle!");
             }
             cols = row_cols;
@@ -54,7 +54,7 @@ impl Grid {
         let Some(here) = self.get(i, j) else {
             return false;
         };
-        if ((here != Xmas::x) || ((delta_i == 0) && (delta_j == 0))) {
+        if (here != Xmas::x) || ((delta_i == 0) && (delta_j == 0)) {
             return false;
         }
         let mut char_buf = vec!(Xmas::x);
@@ -81,8 +81,8 @@ impl Grid {
                     continue;
                 }
 // 
-                if (self.is_xmas_in_direction(i, delta_i, j, delta_j)) {
-                    if (count == 0) {
+                if self.is_xmas_in_direction(i, delta_i, j, delta_j) {
+                    if count == 0 {
                         print!("({i}, {j}) ");
                     }
                     count += 1;
@@ -92,7 +92,7 @@ impl Grid {
             }
         }
 
-        if (count > 0) {
+        if count > 0 {
             print!("\n");
         }
 
@@ -114,9 +114,9 @@ impl Grid {
 }
 
 fn pos_with_offset(i: usize, delta_i: i8) -> Option<usize> {
-    if (delta_i == 0) {
+    if delta_i == 0 {
         return Some(i);
-    } else if (delta_i < 0) {
+    } else if delta_i < 0 {
         i.checked_sub((delta_i * -1).try_into().expect("delta i overflow"))
     } else {
         i.checked_add(delta_i.try_into().unwrap())
@@ -124,19 +124,19 @@ fn pos_with_offset(i: usize, delta_i: i8) -> Option<usize> {
 }
 
 fn direction_char(delta_i: i8, delta_j: i8) -> &'static str {
-    if ((delta_i > 0) && (delta_j < 0)) {
+    if (delta_i > 0) && (delta_j < 0) {
         return "⬋";
-    } else if ((delta_i == 0) && (delta_j < 0)) {
+    } else if (delta_i == 0) && (delta_j < 0) {
         return "⬅";
-    } else if ((delta_i < 0) && (delta_j < 0)) {
+    } else if (delta_i < 0) && (delta_j < 0) {
         return "⬉";
-    } else if ((delta_i < 0) && (delta_j == 0)) {
+    } else if (delta_i < 0) && (delta_j == 0) {
         return "⬆";
-    } else if ((delta_i < 0) && (delta_j > 0)) {
+    } else if (delta_i < 0) && (delta_j > 0) {
         return "⬈";
-    } else if ((delta_i == 0) && (delta_j > 0)) {
+    } else if (delta_i == 0) && (delta_j > 0) {
         return "⮕";
-    } else if ((delta_i > 0) && (delta_j > 0)) {
+    } else if (delta_i > 0) && (delta_j > 0) {
         return "⬊";
     } else {
         return "⬇";
