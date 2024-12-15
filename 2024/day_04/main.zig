@@ -94,18 +94,47 @@ const Grid = struct {
         return count;
     }
 
-    fn count_xmas(self: *const Grid) usize {
+    fn find_x_mas(self: *const Grid, i: usize, j: usize) bool {
+        const here = self.get(i, j) orelse return false;
+        if (here != .a) {
+            return false;
+        }
+
+        const top_left = self.get_with_offset(i, j, -1, -1) orelse return false;
+        const top_right = self.get_with_offset(i, j, -1, 1) orelse return false;
+        const bot_left = self.get_with_offset(i, j, 1, -1) orelse return false;
+        const bot_right = self.get_with_offset(i, j, 1, 1) orelse return false;
+
+        var count: usize = 0;
+
+        if ((top_left == .m) and (bot_right == .s)) {
+            count += 1;
+        } else if ((top_left == .s) and (bot_right == .m)) {
+            count += 1;
+        }
+
+        if ((top_right == .m) and (bot_left == .s)) {
+            count += 1;
+        } else if ((top_right == .s) and (bot_left == .m)) {
+            count += 1;
+        }
+
+        return (count == 2);
+    }
+
+    fn count_xmas(self: *const Grid, part: enum { part1, part2 }) usize {
         const rows = self.grid.items.len / self.cols;
         var total: usize = 0;
 
         for (0..rows) |i| {
             for (0..self.cols) |j| {
                 _ = self.get(i, j).?;
-                const curr = self.find_xmas(i, j);
-                // if (curr > 0) {
-                // }
-
-                total += curr;
+                switch (part) {
+                    .part1 => total += self.find_xmas(i, j),
+                    .part2 => if (self.find_x_mas(i, j)) {
+                        total += 1;
+                    },
+                }
             }
         }
 
@@ -185,9 +214,10 @@ pub fn main() !void {
     defer grid.grid.deinit();
 
     if (second_part) {
-        std.log.err("part 2 is missing!", .{});
+        const total = grid.count_xmas(.part2);
+        std.log.info("{d}\n", .{total});
     } else {
-        const total = grid.count_xmas();
+        const total = grid.count_xmas(.part1);
         std.log.info("{d}\n", .{total});
     }
 }
