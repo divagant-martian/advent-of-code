@@ -39,12 +39,31 @@ pub fn main() !void {
     const data = try buf_reader.reader().readAllAlloc(allocator, std.math.maxInt(usize));
     var lines = std.mem.splitScalar(u8, data, '\n');
 
-    if (second_part) {
-        @panic("we haven't done part 2");
-    } else {
-        const rules = try Rules.new(&lines, allocator);
-        const updates = try parse_updates(&lines, allocator);
+    const rules = try Rules.new(&lines, allocator);
+    const updates = try parse_updates(&lines, allocator);
 
+    if (second_part) {
+        var total: usize = 0;
+
+        for (updates.items) |*update| {
+            if (!rules.is_sorted(update.items)) {
+                std.log.debug("{d} will be sorted", .{update.items});
+                const sorted_update = rules.sort(update.items) catch unreachable;
+
+                if (!rules.is_sorted(sorted_update.items)) {
+                    std.log.err("{d} is not sorted", .{sorted_update.items});
+                    @panic("BUG");
+                }
+
+                const mid_idx = sorted_update.items.len / 2;
+                const mid_page = sorted_update.items[mid_idx];
+                std.log.info("{d} is now sorted, mid page is {d}", .{ sorted_update.items, mid_page });
+                total += mid_page;
+            }
+        }
+
+        std.log.info("part 2: {d}", .{total});
+    } else {
         var total: usize = 0;
 
         for (updates.items) |update| {
@@ -75,23 +94,23 @@ const Rules = struct {
 
             var tokens = std.mem.tokenizeScalar(u8, line, '|');
 
-            const fst = tokens.next() orelse return InvalidRules.MissingNum;
-            const snd = tokens.next() orelse return InvalidRules.MissingNum;
+            const lhs = tokens.next() orelse return InvalidRules.MissingNum;
+            const rhs = tokens.next() orelse return InvalidRules.MissingNum;
 
             if (tokens.next()) |_| {
                 return InvalidRules.TrailingChars;
             }
 
-            const fst_num = try std.fmt.parseInt(u8, fst, 10);
-            const snd_num = try std.fmt.parseInt(u8, snd, 10);
+            const lhs_num = try std.fmt.parseInt(u8, lhs, 10);
+            const rhs_num = try std.fmt.parseInt(u8, rhs, 10);
 
-            const result = try inner.getOrPut(fst_num);
+            const result = try inner.getOrPut(lhs_num);
 
             if (!result.found_existing) {
                 result.value_ptr.* = std.ArrayList(u8).init(allocator);
             }
 
-            try result.value_ptr.append(snd_num);
+            try result.value_ptr.append(rhs_num);
         }
 
         return Rules{ .inner = inner };
@@ -111,6 +130,56 @@ const Rules = struct {
         }
 
         return true;
+    }
+
+    fn sort(self: *const Rules, update: []const u8) !std.ArrayList(u8) {
+        var sorted_update = try std.ArrayList(u8).initCapacity(self.inner.allocator, update.len);
+        var counts = std.AutoArrayHashMap(u8, usize).init(self.inner.allocator);
+        var sources = std.AutoArrayHashMap(u8, void).init(self.inner.allocator);
+
+        var rules_iter = self.inner.iterator();
+        while (rules_iter.next()) |entry| {
+            const lhs = entry.key_ptr.*;
+
+            if (contains(u8, update, lhs)) {
+                for (entry.value_ptr.items) |rhs| {
+                    if (contains(u8, update, rhs)) {
+                        (try counts.getOrPutValue(rhs, 0)).value_ptr.* += 1;
+                        _ = sources.swapRemove(rhs);
+                    }
+                }
+                if (!counts.contains(lhs)) {
+                    try sources.put(lhs, {});
+                }
+            }
+        }
+
+        var queue = sources;
+
+        std.log.debug("queue: {d}", .{queue.keys()});
+
+        while (queue.popOrNull()) |node| {
+            try sorted_update.append(node.key);
+
+            const neighbors = self.inner.get(node.key) orelse continue;
+            for (neighbors.items) |neighbor| {
+                if (contains(u8, update, neighbor)) {
+                    const count = counts.getPtr(neighbor).?;
+                    count.* -= 1;
+
+                    if (count.* == 0) {
+                        try queue.put(neighbor, {});
+                        _ = counts.swapRemove(neighbor);
+                    }
+                }
+            }
+        }
+
+        if (counts.keys().len != 0) {
+            @panic("cycle detected, you bitch!");
+        }
+
+        return sorted_update;
     }
 };
 
@@ -139,4 +208,8 @@ fn parse_updates(lines: *std.mem.SplitIterator(u8, .scalar), allocator: std.mem.
     }
 
     return updates;
+}
+
+fn contains(comptime T: type, haystack: []const T, needle: T) bool {
+    return std.mem.containsAtLeast(T, haystack, 1, &[_]T{needle});
 }
