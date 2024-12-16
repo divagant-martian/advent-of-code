@@ -3,7 +3,7 @@ const std = @import("std");
 const Position = packed struct { i: usize, j: usize };
 
 const Map = struct {
-    obstacles: std.ArrayList(Position),
+    obstacles: std.AutoHashMap(Position, void),
     cols: usize,
     lines: usize,
 
@@ -12,7 +12,7 @@ const Map = struct {
     fn new(data: []const u8, allocator: std.mem.Allocator) !struct { Map, Guard } {
         var lines = std.mem.tokenizeScalar(u8, data, '\n');
 
-        var obstacles = std.ArrayList(Position).init(allocator);
+        var obstacles = std.AutoHashMap(Position, void).init(allocator);
 
         var guard: ?Guard = null;
         var line_number: usize = 0;
@@ -20,7 +20,7 @@ const Map = struct {
         while (lines.next()) |line| : (line_number += 1) {
             for (line, 0..) |char, col_number| switch (char) {
                 '.' => continue,
-                '#' => try obstacles.append(.{ .i = line_number, .j = col_number }),
+                '#' => try obstacles.put(.{ .i = line_number, .j = col_number }, {}),
                 '^' => guard = Guard{ .position = .{ .i = line_number, .j = col_number }, .direction = .up, .is_outside = null },
                 else => return Map.newErr.invalidChar,
             };
@@ -34,7 +34,7 @@ const Map = struct {
     }
 
     fn is_obstacle(self: *const Map, pos: Position) bool {
-        return std.mem.containsAtLeast(Position, self.obstacles.items, 1, &[_]Position{pos});
+        return self.obstacles.contains(pos);
     }
 };
 
