@@ -147,6 +147,7 @@ pub fn main() !void {
         // std.log.info("part 2: {d}", .{total});
     } else {
         var visited = std.AutoArrayHashMap(Position, void).init(allocator);
+        try visited.put(guard.position, {});
         while (guard.is_outside == null) {
             if (guard.patrol_step(&map)) {
                 try visited.put(guard.position, {});
