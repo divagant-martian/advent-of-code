@@ -6,14 +6,20 @@ pub const std_options = .{
 
 const Num: type = u64;
 
-const Op = enum(u1) {
+const Op = enum(u2) {
     add,
     mul,
+    pip,
 
     fn apply(self: Op, lhs: Num, rhs: Num) Num {
         return switch (self) {
             .add => lhs + rhs,
             .mul => lhs * rhs,
+            .pip => {
+                const exp = std.math.log10_int(rhs);
+                const tens = std.math.powi(Num, 10, exp + 1) catch unreachable;
+                return lhs * tens + rhs;
+            },
         };
     }
 
@@ -24,6 +30,7 @@ const Op = enum(u1) {
         const char: u8 = switch (self) {
             .add => '+',
             .mul => '*',
+            .pip => '|',
         };
 
         try writer.print("{u}", .{char});
@@ -88,8 +95,9 @@ const Equation = struct {
         return result;
     }
 
-    fn is_solvable(self: *const Equation) !bool {
+    fn is_solvable(self: *const Equation, with_pip: bool) !bool {
         var to_check = std.ArrayList(std.ArrayList(Op)).init(self.operands.allocator);
+        defer to_check.deinit();
 
         const empty_ops = std.ArrayList(Op).init(self.operands.allocator);
         try to_check.append(empty_ops);
@@ -111,12 +119,20 @@ const Equation = struct {
 
                 try to_check.append(with_mul);
                 try to_check.append(with_add);
+
+                if (with_pip) {
+                    var with_pipee = try current_ops.clone();
+                    try with_pipee.append(.pip);
+
+                    try to_check.append(with_pipee);
+                }
             } else if (self.is_solved_by(current_ops.items)) {
                 // solution found
                 const with_ops = Equation.WithOps{ .this = self, .ops = current_ops.items };
                 std.log.debug("Solution: {s} = {d}", .{ with_ops, self.result });
                 return true;
             }
+            current_ops.deinit();
         }
 
         return false;
@@ -161,24 +177,19 @@ pub fn main() !void {
     var buf_reader = std.io.bufferedReader(file.reader());
     const data = try buf_reader.reader().readAllAlloc(allocator, std.math.maxInt(usize));
 
-    var equations = std.ArrayList(Equation).init(allocator);
-
     var lines = std.mem.tokenizeScalar(u8, data, '\n');
 
+    var total: usize = 0;
     while (lines.next()) |line| {
         const eq = try Equation.new(line, allocator);
-        try equations.append(eq);
-    }
-
-    if (second_part) {
-        // std.log.info("part 2: {d}", .{loopy_obstacles.keys().len});
-    } else {
-        var total: usize = 0;
-        for (equations.items) |eq| {
-            if (try eq.is_solvable()) {
-                total += eq.result;
-            }
+        if (try eq.is_solvable(second_part)) {
+            total += eq.result;
         }
-        std.log.info("part 1: {d}", .{total});
+        eq.operands.deinit();
     }
+    std.log.info("sol: {d}", .{total});
+}
+
+test "pip" {
+    try std.testing.expectEqual(1234567, Op.pip.apply(123, 4567));
 }
