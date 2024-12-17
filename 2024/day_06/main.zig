@@ -103,6 +103,31 @@ const Guard = struct {
     }
 };
 
+/// Run until the guard exits the map or gets stuck in a loop. Returns true if
+/// the guard exits.
+fn run(guard_param: Guard, map: *const Map) !bool {
+    var guard = guard_param;
+    var visited = std.AutoArrayHashMap(struct { Position, Guard.Direction }, void).init(map.obstacles.allocator);
+    try visited.put(.{ guard.position, guard.direction }, {});
+    while (guard.is_outside == null) {
+        if (guard.patrol_step(map)) {
+            if (guard.is_outside == null) {
+                const state = .{ guard.position, guard.direction };
+                const result = try visited.getOrPutValue(state, {});
+
+                if (result.found_existing) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
+}
+pub const std_options = .{
+    .log_level = .info,
+};
+
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
@@ -141,18 +166,36 @@ pub fn main() !void {
     var buf_reader = std.io.bufferedReader(file.reader());
     const data = try buf_reader.reader().readAllAlloc(allocator, std.math.maxInt(usize));
 
-    const map: Map, var guard: Guard = try Map.new(data, allocator);
+    var map: Map, const orig_guard: Guard = try Map.new(data, allocator);
+
+    var guard = orig_guard;
+
+    var visited = std.AutoArrayHashMap(Position, void).init(allocator);
+    try visited.put(guard.position, {});
+    while (guard.is_outside == null) {
+        if (guard.patrol_step(&map)) {
+            try visited.put(guard.position, {});
+        }
+    }
 
     if (second_part) {
-        // std.log.info("part 2: {d}", .{total});
-    } else {
-        var visited = std.AutoArrayHashMap(Position, void).init(allocator);
-        try visited.put(guard.position, {});
-        while (guard.is_outside == null) {
-            if (guard.patrol_step(&map)) {
-                try visited.put(guard.position, {});
+        var loopy_obstacles = std.AutoArrayHashMap(Position, void).init(allocator);
+
+        _ = visited.swapRemove(orig_guard.position);
+
+        for (visited.keys()) |pos| {
+            try map.obstacles.put(pos, {});
+
+            const exits_map = try run(orig_guard, &map);
+
+            _ = map.obstacles.remove(pos);
+
+            if (!exits_map) {
+                try loopy_obstacles.put(pos, {});
             }
         }
+        std.log.info("part 2: {d}", .{loopy_obstacles.keys().len});
+    } else {
         std.log.info("part 1: {d}", .{visited.keys().len});
     }
 }
