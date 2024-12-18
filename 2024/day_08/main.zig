@@ -4,7 +4,26 @@ const std = @import("std");
 // .log_level = .debug,
 // };
 
-const Position = struct { i: usize, j: usize };
+const Position = struct {
+    i: i16,
+    j: i16,
+
+    fn sub(self: *const Position, other: *const Position) Position {
+        const i = self.i - other.i;
+        const j = self.j - other.j;
+        return Position{ .i = i, .j = j };
+    }
+
+    fn add(self: *const Position, other: *const Position) Position {
+        const i = self.i + other.i;
+        const j = self.j + other.j;
+        return Position{ .i = i, .j = j };
+    }
+
+    fn less_than(self: *const Position, other: *const Position) bool {
+        return self.i < other.i and self.j < other.j;
+    }
+};
 
 const Antenna = union(enum) {
     lowercase: u8,
@@ -14,8 +33,8 @@ const Antenna = union(enum) {
 
 const Map = struct {
     antennas: std.AutoHashMap(Antenna, std.AutoArrayHashMap(Position, void)),
-    cols: usize,
-    lines: usize,
+    cols: i16,
+    lines: i16,
 
     const newErr = error{ invalidChar, notRectangular };
 
@@ -24,12 +43,16 @@ const Map = struct {
 
         var antennas = std.AutoHashMap(Antenna, std.AutoArrayHashMap(Position, void)).init(allocator);
 
-        var line_number: usize = 0;
-        var cols: usize = 0;
+        var line_number: i16 = 0;
+        var cols: i16 = 0;
         while (lines.next()) |line| : (line_number += 1) {
-            for (line, 0..) |char, col_number| {
+            var col_number: i16 = 0;
+            for (line) |char| {
                 const antenna = switch (char) {
-                    '.' => continue,
+                    '.' => {
+                        col_number += 1;
+                        continue;
+                    },
                     'a'...'z' => Antenna{ .lowercase = char },
                     'A'...'Z' => Antenna{ .uppercase = char },
                     '0'...'9' => Antenna{ .digit = char },
@@ -42,14 +65,45 @@ const Map = struct {
                     entry.value_ptr.* = std.AutoArrayHashMap(Position, void).init(allocator);
                 }
                 try entry.value_ptr.put(pos, {});
+                col_number += 1;
             }
             if (cols == 0) {
-                cols = line.len;
+                cols = col_number;
             } else if (cols != line.len) {
                 return Map.newErr.notRectangular;
             }
         }
         return Map{ .antennas = antennas, .lines = line_number, .cols = cols };
+    }
+
+    fn get_antinodes(self: *const Map) !std.AutoArrayHashMap(Position, void) {
+        var antinodes = std.AutoArrayHashMap(Position, void).init(self.antennas.allocator);
+        var iter = self.antennas.iterator();
+        const kinda_zero = Position{ .i = -1, .j = -1 };
+        const max = Position{ .i = self.lines, .j = self.cols };
+
+        while (iter.next()) |entry| {
+            const positions = entry.value_ptr.keys();
+
+            for (positions, 1..) |first, i| {
+                if (i == positions.len) {
+                    break;
+                }
+                for (positions[i..]) |second| {
+                    const direction = second.sub(&first);
+                    const fst_antinode = first.sub(&direction);
+                    const snd_antinode = second.add(&direction);
+                    if (fst_antinode.less_than(&max) and kinda_zero.less_than(&fst_antinode)) {
+                        try antinodes.put(fst_antinode, {});
+                    }
+                    if (snd_antinode.less_than(&max) and kinda_zero.less_than(&snd_antinode)) {
+                        try antinodes.put(snd_antinode, {});
+                    }
+                }
+            }
+        }
+
+        return antinodes;
     }
 };
 
@@ -102,5 +156,14 @@ pub fn main() !void {
 
     const map = try Map.new(data, allocator);
 
-    std.log.info("sol: {any}, len {d}", .{ part, map.antennas.count() });
+    switch (part) {
+        .a => {
+            const antinodes = try map.get_antinodes();
+            std.log.info("antinode count: {d}", .{antinodes.count()});
+        },
+        .b => {
+            std.log.err("unimplemented", .{});
+            std.process.exit(1);
+        },
+    }
 }
