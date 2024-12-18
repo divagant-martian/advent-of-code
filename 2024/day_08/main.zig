@@ -76,7 +76,7 @@ const Map = struct {
         return Map{ .antennas = antennas, .lines = line_number, .cols = cols };
     }
 
-    fn get_antinodes(self: *const Map) !std.AutoArrayHashMap(Position, void) {
+    fn get_antinodes(self: *const Map, part: Part) !std.AutoArrayHashMap(Position, void) {
         var antinodes = std.AutoArrayHashMap(Position, void).init(self.antennas.allocator);
         var iter = self.antennas.iterator();
         const kinda_zero = Position{ .i = -1, .j = -1 };
@@ -91,13 +91,30 @@ const Map = struct {
                 }
                 for (positions[i..]) |second| {
                     const direction = second.sub(&first);
-                    const fst_antinode = first.sub(&direction);
-                    const snd_antinode = second.add(&direction);
-                    if (fst_antinode.less_than(&max) and kinda_zero.less_than(&fst_antinode)) {
-                        try antinodes.put(fst_antinode, {});
-                    }
-                    if (snd_antinode.less_than(&max) and kinda_zero.less_than(&snd_antinode)) {
-                        try antinodes.put(snd_antinode, {});
+                    switch (part) {
+                        .a => {
+                            const fst_antinode = first.sub(&direction);
+                            const snd_antinode = second.add(&direction);
+                            if (fst_antinode.less_than(&max) and kinda_zero.less_than(&fst_antinode)) {
+                                try antinodes.put(fst_antinode, {});
+                            }
+                            if (snd_antinode.less_than(&max) and kinda_zero.less_than(&snd_antinode)) {
+                                try antinodes.put(snd_antinode, {});
+                            }
+                        },
+                        .b => {
+                            var adding_antinode = second;
+                            while (adding_antinode.less_than(&max) and kinda_zero.less_than(&adding_antinode)) {
+                                try antinodes.put(adding_antinode, {});
+                                adding_antinode = adding_antinode.add(&direction);
+                            }
+
+                            var subing_antinode = first;
+                            while (subing_antinode.less_than(&max) and kinda_zero.less_than(&subing_antinode)) {
+                                try antinodes.put(subing_antinode, {});
+                                subing_antinode = subing_antinode.sub(&direction);
+                            }
+                        },
                     }
                 }
             }
@@ -156,14 +173,6 @@ pub fn main() !void {
 
     const map = try Map.new(data, allocator);
 
-    switch (part) {
-        .a => {
-            const antinodes = try map.get_antinodes();
-            std.log.info("antinode count: {d}", .{antinodes.count()});
-        },
-        .b => {
-            std.log.err("unimplemented", .{});
-            std.process.exit(1);
-        },
-    }
+    const antinodes = try map.get_antinodes(part);
+    std.log.info("antinode count: {d}", .{antinodes.count()});
 }
