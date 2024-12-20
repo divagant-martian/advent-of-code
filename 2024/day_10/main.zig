@@ -34,67 +34,91 @@ const Direction = enum {
     }
 };
 
+fn Gridy(comptime T: type) type {
+    return struct {
+        const Self = @This();
+
+        grid: std.ArrayList(T),
+        cols: usize,
+
+        fn new(data: []const u8, parse_fn: fn (u8) anyerror!T, allocator: std.mem.Allocator) !Self {
+            var lines = std.mem.tokenizeScalar(u8, data, '\n');
+            var grid = std.ArrayList(Num).init(allocator);
+            var cols: usize = 0;
+
+            while (lines.next()) |line| {
+                var row_cols: usize = 0;
+                for (line) |c| {
+                    const val: T = try parse_fn(c);
+                    try grid.append(val);
+                    row_cols += 1;
+                }
+                if ((cols != 0) and cols != row_cols) {
+                    @panic("not a rentangle!");
+                }
+                cols = row_cols;
+            }
+
+            return .{
+                .grid = grid,
+                .cols = cols,
+            };
+        }
+
+        fn get(self: *const Self, pos: Position) ?T {
+            if (pos.j >= self.cols) {
+                return null;
+            }
+            const idx = pos.i * self.cols + pos.j;
+            if (idx >= self.grid.items.len) {
+                return null;
+            }
+
+            return self.grid.items[idx];
+        }
+
+        inline fn items(self: *const Self) []const T {
+            return self.grid.items;
+        }
+
+        fn get_with_offset(self: *const Self, i: usize, j: usize, delta_i: i8, delta_j: i8) ?T {
+            const new_i = pos_with_offset(i, delta_i) orelse return null;
+            const new_j = pos_with_offset(j, delta_j) orelse return null;
+            return self.get(new_i, new_j);
+        }
+    };
+}
+
 const Grid = struct {
-    grid: std.ArrayList(Num),
-    cols: usize,
+    grid: Gridy(Num),
+
+    const Self = @This();
 
     fn new(data: []const u8, allocator: std.mem.Allocator) !Grid {
-        var lines = std.mem.tokenizeScalar(u8, data, '\n');
-        var grid = std.ArrayList(Num).init(allocator);
-        var cols: usize = 0;
-
-        while (lines.next()) |line| {
-            var row_cols: usize = 0;
-            for (line) |c| {
-                const d = try std.fmt.parseInt(Num, &[_]u8{c}, 10);
-                try grid.append(d);
-                row_cols += 1;
+        const parse_num = struct {
+            pub fn call(c: u8) !Num {
+                return std.fmt.parseInt(Num, &[_]u8{c}, 10);
             }
-            if ((cols != 0) and cols != row_cols) {
-                @panic("not a rentangle!");
-            }
-            cols = row_cols;
-        }
-
-        return .{
-            .grid = grid,
-            .cols = cols,
-        };
+        }.call;
+        const grid = try Gridy(Num).new(data, parse_num, allocator);
+        return Self{ .grid = grid };
     }
 
-    fn get(self: *const Grid, pos: Position) ?Num {
-        if (pos.j >= self.cols) {
-            return null;
-        }
-        const idx = pos.i * self.cols + pos.j;
-        if (idx >= self.grid.items.len) {
-            return null;
-        }
-
-        return self.grid.items[idx];
-    }
-
-    fn get_with_offset(self: *const Grid, i: usize, j: usize, delta_i: i8, delta_j: i8) ?Num {
-        const new_i = pos_with_offset(i, delta_i) orelse return null;
-        const new_j = pos_with_offset(j, delta_j) orelse return null;
-        return self.get(new_i, new_j);
-    }
-
-    fn trails_from_position(self: *const Grid, pos: Position, start_val: Num) !usize {
-        const head = self.get(pos) orelse @panic("finding trail outside grid");
+    fn trails_from_position(self: *const Self, pos: Position, start_val: Num) !usize {
+        const head = self.grid.get(pos) orelse @panic("finding trail outside grid");
         if (head != start_val) {
             return 0;
         }
 
-        var trails = std.AutoArrayHashMap(Position, void).init(self.grid.allocator);
-        var queue = std.ArrayList(Position).init(self.grid.allocator);
+        var trails = std.AutoArrayHashMap(Position, void).init(self.grid.grid.allocator);
+        var queue = std.ArrayList(Position).init(self.grid.grid.allocator);
         try queue.append(pos);
 
         while (queue.popOrNull()) |current| {
-            const my_val = self.get(current) orelse @panic("queued outside of grid");
+            const my_val = self.grid.get(current) orelse @panic("queued outside of grid");
             for (current.neighbors()) |maybe_neighbor| {
                 if (maybe_neighbor) |neighbor| {
-                    if (self.get(neighbor)) |val| {
+                    if (self.grid.get(neighbor)) |val| {
                         if (my_val + 1 == val) {
                             if (val == 9) {
                                 try trails.put(neighbor, {});
@@ -111,12 +135,12 @@ const Grid = struct {
     }
 
     fn all_trails_score(self: *const Grid) !usize {
-        const lines = self.grid.items.len / self.cols;
+        const lines = self.grid.items().len / self.grid.cols;
 
         var total: usize = 0;
 
         for (0..lines) |i| {
-            for (0..self.cols) |j| {
+            for (0..self.grid.cols) |j| {
                 total += try self.trails_from_position(Position{ .i = i, .j = j }, 0);
             }
         }
@@ -125,7 +149,7 @@ const Grid = struct {
     }
 };
 
-fn pos_with_offset(i: usize, delta_i: i8) ?usize {
+fn pos_with_offset(i: usize, delta_i: i2) ?usize {
     if (delta_i == 0) {
         return i;
     } else if (delta_i < 0) {
@@ -135,7 +159,7 @@ fn pos_with_offset(i: usize, delta_i: i8) ?usize {
     }
 }
 
-fn direction_char(delta_i: i8, delta_j: i8) []const u8 {
+fn direction_char(delta_i: i2, delta_j: i2) []const u8 {
     if ((delta_i > 0) and (delta_j < 0)) {
         return "⬋";
     } else if ((delta_i == 0) and (delta_j < 0)) {
