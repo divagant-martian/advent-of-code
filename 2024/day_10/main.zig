@@ -24,6 +24,15 @@ const Direction = enum {
     left,
     right,
 
+    fn rotate_no_repeat(self: Direction) ?Direction {
+        return switch (self) {
+            .up => .right,
+            .right => .down,
+            .down => .left,
+            .left => null,
+        };
+    }
+
     fn as_deltas(self: Direction) struct { i2, i2 } {
         return switch (self) {
             .up => .{ -1, 0 },
@@ -66,6 +75,11 @@ fn Gridy(comptime T: type) type {
         }
 
         fn get(self: *const Self, pos: Position) ?T {
+            const idx = self.get_idx(pos) orelse return null;
+            return self.grid.items[idx];
+        }
+
+        fn get_idx(self: *const Self, pos: Position) ?usize {
             if (pos.j >= self.cols) {
                 return null;
             }
@@ -74,11 +88,20 @@ fn Gridy(comptime T: type) type {
                 return null;
             }
 
-            return self.grid.items[idx];
+            return idx;
+        }
+
+        fn get_mut(self: *Self, pos: Position) ?*T {
+            const idx = self.get_idx(pos) orelse return null;
+            return &self.grid.items[idx];
         }
 
         inline fn items(self: *const Self) []const T {
             return self.grid.items;
+        }
+
+        fn neighbors(self: *const Self, pos: Position) NeighborIter {
+            return NeighborIter{ .gridy = self, .pos = pos, .curr_dir = .up };
         }
 
         fn get_with_offset(self: *const Self, i: usize, j: usize, delta_i: i8, delta_j: i8) ?T {
@@ -86,6 +109,43 @@ fn Gridy(comptime T: type) type {
             const new_j = pos_with_offset(j, delta_j) orelse return null;
             return self.get(new_i, new_j);
         }
+
+        const NeighborIter = struct {
+            gridy: *const Self,
+            pos: Position,
+            curr_dir: ?Direction,
+
+            fn next(self: *NeighborIter) ?struct {
+                pos: Position,
+                item: T,
+            } {
+                var dir = self.curr_dir orelse return null;
+
+                while (true) {
+                    // check if the current direction has anything in it
+                    const maybe_neighbor = self.pos.move(dir);
+
+                    if (maybe_neighbor) |neighbor| {
+                        // we have a neighbor position, now we need to check if
+                        // this neighbor exists within the grid
+                        if (self.gridy.get(neighbor)) |val| {
+                            self.curr_dir = dir.rotate_no_repeat();
+                            return .{ .item = val, .pos = neighbor };
+                        }
+                    }
+
+                    if (dir.rotate_no_repeat()) |next_dir| {
+                        // we can now check the next direction
+                        dir = next_dir;
+                    } else {
+                        // neighbor is null and all directions have been exhausted,
+                        // set curr_dir to null to fuse the iterator
+                        self.curr_dir = null;
+                        return null;
+                    }
+                }
+            }
+        };
     };
 }
 
@@ -104,7 +164,7 @@ const Grid = struct {
         return Self{ .grid = grid };
     }
 
-    fn trails_from_position(self: *const Self, pos: Position, start_val: Num) !usize {
+    fn summits_from_position(self: *const Self, pos: Position, start_val: Num) !usize {
         const head = self.grid.get(pos) orelse @panic("finding trail outside grid");
         if (head != start_val) {
             return 0;
@@ -141,8 +201,72 @@ const Grid = struct {
 
         for (0..lines) |i| {
             for (0..self.grid.cols) |j| {
-                total += try self.trails_from_position(Position{ .i = i, .j = j }, 0);
+                total += try self.summits_from_position(Position{ .i = i, .j = j }, 0);
             }
+        }
+
+        return total;
+    }
+
+    fn all_trails_rating(self: *const Self) !usize {
+        const grid = std.ArrayList(?usize).init(self.grid.grid.allocator);
+        var trails = Gridy(?usize){ .grid = grid, .cols = self.grid.cols };
+        try trails.grid.appendNTimes(null, self.grid.items().len);
+
+        const digits = [_]Num{ 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 };
+
+        const lines = self.grid.items().len / self.grid.cols;
+
+        var total: usize = 0;
+
+        for (digits) |d| {
+            for (0..lines) |i| {
+                for (0..self.grid.cols) |j| {
+                    const pos = Position{ .i = i, .j = j };
+
+                    const val = self.grid.get(pos).?;
+
+                    // only deal with the digit we are searching for
+                    if (val != d) {
+                        continue;
+                    }
+
+                    // fill the base case: there is 1 reachable 9s from 9 (arrived)
+                    if (d == 9) {
+                        trails.get_mut(pos).?.* = 1;
+                        continue;
+                    }
+
+                    var my_total: usize = 0;
+
+                    var neighbors = self.grid.neighbors(pos);
+                    while (neighbors.next()) |neighbor| {
+                        if (neighbor.item == val + 1) {
+                            my_total += trails.get(neighbor.pos).?.?;
+                        }
+                    }
+
+                    trails.get_mut(pos).?.* = my_total;
+
+                    if (d == 0) {
+                        total += my_total;
+                    }
+                }
+            }
+
+            // magic of printing
+            std.debug.print("DIGIT {d}\n", .{d});
+            for (0..lines) |ii| {
+                for (0..self.grid.cols) |jj| {
+                    if (trails.get(Position{ .j = jj, .i = ii }).?) |trail_val| {
+                        std.debug.print("{d: >2} ", .{trail_val});
+                    } else {
+                        std.debug.print("__ ", .{});
+                    }
+                }
+                std.debug.print("\n", .{});
+            }
+            std.debug.print("\n\n", .{});
         }
 
         return total;
@@ -233,6 +357,9 @@ pub fn main() !void {
             const total = try grid.all_trails_score();
             std.log.info("score {d}", .{total});
         },
-        .b => {},
+        .b => {
+            const total = try grid.all_trails_rating();
+            std.log.info("rating {d}", .{total});
+        },
     }
 }
