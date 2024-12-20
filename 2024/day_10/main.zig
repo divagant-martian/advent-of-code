@@ -283,26 +283,6 @@ fn pos_with_offset(i: usize, delta_i: i2) ?usize {
     }
 }
 
-fn direction_char(delta_i: i2, delta_j: i2) []const u8 {
-    if ((delta_i > 0) and (delta_j < 0)) {
-        return "⬋";
-    } else if ((delta_i == 0) and (delta_j < 0)) {
-        return "⬅";
-    } else if ((delta_i < 0) and (delta_j < 0)) {
-        return "⬉";
-    } else if ((delta_i < 0) and (delta_j == 0)) {
-        return "⬆";
-    } else if ((delta_i < 0) and (delta_j > 0)) {
-        return "⬈";
-    } else if ((delta_i == 0) and (delta_j > 0)) {
-        return "⮕";
-    } else if ((delta_i > 0) and (delta_j > 0)) {
-        return "⬊";
-    } else {
-        return "⬇";
-    }
-}
-
 const Part = enum {
     a,
     b,
