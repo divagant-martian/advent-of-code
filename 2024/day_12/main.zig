@@ -34,10 +34,13 @@ fn get_regions(grid: *const Grid) !std.AutoArrayHashMap(Id, Info) {
     return regions;
 }
 
-fn get_regions_price(regions: []const Info) usize {
+fn get_regions_price(regions: []const Info, part: Args.Part) usize {
     var price: usize = 0;
     for (regions) |info| {
-        price += info.perimeter * info.area;
+        price += switch (part) {
+            .a => info.area * info.perimeter,
+            .b => info.area * (info.convex_corners + info.concave_corners),
+        };
     }
     return price;
 }
@@ -47,8 +50,6 @@ fn traverse_region(grid: *const Grid, pos: Position, id: Id, known_ids: *lib_gri
     var queue = std.ArrayList(Position).init(grid.get_allocator());
     try queue.append(pos);
 
-    var blocks = std.ArrayList(Position).init(grid.get_allocator());
-
     var info = Info{ .char = letter };
 
     while (queue.popOrNull()) |check_pos| {
@@ -57,10 +58,11 @@ fn traverse_region(grid: *const Grid, pos: Position, id: Id, known_ids: *lib_gri
             continue;
         } else {
             maybe_id.* = id;
-            try blocks.append(check_pos);
         }
 
         info.area += 1;
+        info.concave_corners += count_concave_corners(grid, check_pos);
+        info.convex_corners += count_convex_corners(grid, check_pos);
         var neighbors = grid.neighbors(check_pos);
 
         // assume this position is the whole region. We substract perimeters
@@ -74,10 +76,6 @@ fn traverse_region(grid: *const Grid, pos: Position, id: Id, known_ids: *lib_gri
                 }
             }
         }
-    }
-
-    for (blocks.items) |block| {
-        info.concave_corners += count_concave_corners(grid, block);
     }
 
     return info;
@@ -122,6 +120,32 @@ fn count_concave_corners(grid: *const Grid, pos: Position) usize {
     return corners;
 }
 
+fn count_convex_corners(grid: *const Grid, pos: Position) usize {
+    const letter = grid.get(pos) orelse @panic("trying to find corner with position outside of grid");
+    var dir: ?lib_grid.Direction = lib_grid.Direction.up;
+
+    var corners: usize = 0;
+    while (dir) |first_dir| : (dir = first_dir.rotate_no_repeat()) {
+        const second_dir = first_dir.rotate();
+
+        // std.log.debug("checking [{c}] at ({d},{d}) direction {any}", .{ letter, pos.i, pos.j, first_dir });
+
+        const first_pos = pos.move(first_dir) orelse continue;
+        const second_pos = pos.move(second_dir) orelse continue;
+        const diagonal_pos = first_pos.move(second_dir) orelse continue;
+
+        const first_neighbor = grid.get(first_pos) orelse continue;
+        const second_neighbor = grid.get(second_pos) orelse continue;
+        const diag_neighbor = grid.get(diagonal_pos) orelse continue;
+
+        if ((letter == first_neighbor) and (letter == second_neighbor) and (letter != diag_neighbor)) {
+            corners += 1;
+        }
+    }
+
+    return corners;
+}
+
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
@@ -149,17 +173,10 @@ pub fn main() !void {
     const formatter = grid.formatter(std.fmt.formatIntValue);
     std.log.debug("{c: <6}", .{formatter});
 
-    switch (args.part) {
-        .a => {
-            const regions = try get_regions(&grid);
-            for (regions.values()) |info| {
-                std.log.debug("[{c}] area: {d} perimeter: {d: <3} concave: {d: <3} convex: {d}", info);
-            }
-            const price = get_regions_price(regions.values());
-            std.log.info("price {d}", .{price});
-        },
-        .b => {
-            @panic("unimplemented");
-        },
+    const regions = try get_regions(&grid);
+    for (regions.values()) |info| {
+        std.log.debug("[{c}] area: {d} perimeter: {d: <3} concave: {d: <3} convex: {d: <3}", info);
     }
+    const price = get_regions_price(regions.values(), args.part);
+    std.log.info("price {d}", .{price});
 }
