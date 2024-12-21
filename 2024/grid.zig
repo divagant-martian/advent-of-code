@@ -89,6 +89,10 @@ pub fn Grid(comptime T: type) type {
             return idx;
         }
 
+        pub fn get_allocator(self: *const Self) std.mem.Allocator {
+            return self.grid.allocator;
+        }
+
         pub fn get_mut(self: *Self, pos: Position) ?*T {
             const idx = self.get_idx(pos) orelse return null;
             return &self.grid.items[idx];
@@ -100,6 +104,10 @@ pub fn Grid(comptime T: type) type {
 
         pub fn neighbors(self: *const Self, pos: Position) NeighborIter {
             return NeighborIter{ .gridy = self, .pos = pos, .curr_dir = .up };
+        }
+
+        pub inline fn get_lines(self: *const Self) usize {
+            return self.items().len / self.cols;
         }
 
         pub const NeighborIter = struct {
@@ -169,7 +177,7 @@ fn gen_fmt(comptime T: type, t_format: *const fn (T, comptime []const u8, std.fm
 
         pub fn format(self: Self, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
             const cols = self.grid.cols;
-            const lines = self.grid.items().len / cols;
+            const lines = self.grid.get_lines();
             try writer.writeAll("grid:\n");
 
             try std.fmt.formatIntValue(' ', "c", options, writer);
