@@ -164,7 +164,6 @@ fn pos_with_offset(i: usize, delta_i: i2) ?usize {
 fn gen_fmt(comptime T: type, t_format: *const fn (T, comptime []const u8, std.fmt.FormatOptions, anytype) anyerror!void) type {
     return struct {
         grid: *const Grid(T),
-        // t_format: *t_format,
 
         const Self = @This();
 
@@ -179,7 +178,6 @@ fn gen_fmt(comptime T: type, t_format: *const fn (T, comptime []const u8, std.fm
                 try std.fmt.formatIntValue(col, "d", options, writer);
             }
             try writer.writeAll("\x1b[0m\n");
-            // try writer.writeAll("\n");
 
             for (0..lines) |i| {
                 try writer.writeAll("\x1b[1;95m");
