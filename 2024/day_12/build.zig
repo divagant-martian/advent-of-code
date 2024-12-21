@@ -9,4 +9,12 @@ pub fn build(b: *std.Build) void {
     exe.root_module.addImport("args", args);
 
     b.installArtifact(exe);
+
+    const run_exe = b.addRunArtifact(exe);
+    if (b.args) |run_args| {
+        run_exe.addArgs(run_args);
+    }
+
+    const run_step = b.step("run", "run bin");
+    run_step.dependOn(&run_exe.step);
 }
