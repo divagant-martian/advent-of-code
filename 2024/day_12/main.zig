@@ -7,31 +7,40 @@ const Char: type = u8;
 
 const Grid: type = lib_grid.Grid(Char);
 
-const Id: type = u8;
+const Id: type = u16;
 const Info = struct { char: Char, area: usize = 0, perimeter: usize = 0 };
 
-// fn get_regions(grid: *const Grid) std.AutoArrayHashMap(Id, Info) {
-//     var regions = std.AutoArrayHashMap(Id, Info).init(grid.get_allocator());
-//
-//     // for each position we keep whether an id is already known.
-//     var id_grid = try std.ArrayList(?Id).initCapacity(grid.get_allocator(), grid.items().len);
-//     id_grid.appendNTimesAssumeCapacity(null, grid.items().len);
-//
-//     var known_ids = lib_grid.Grid(?Id){ .grid = id_grid };
-//
-//     // all those positions in known_ids that are null. we are lazy
-//     var missing_ids = std.AutoArrayHashMap(Position, void).init(grid.get_allocator());
-//     try missing_ids.ensureTotalCapacity(grid.items().len);
-//
-//     for (0..grid.lines()) |i| {
-//         for (0..grid.cols) |j| {
-//             const pos = Position{ .i = i, .j = j };
-//             missing_ids.putAssumeCapacity(pos, {});
-//         }
-//     }
-//
-//     return regions;
-// }
+fn get_regions(grid: *const Grid) !std.AutoArrayHashMap(Id, Info) {
+    var regions = std.AutoArrayHashMap(Id, Info).init(grid.get_allocator());
+
+    // for each position we keep whether an id is already known.
+    var id_grid = try std.ArrayList(?Id).initCapacity(grid.get_allocator(), grid.items().len);
+    id_grid.appendNTimesAssumeCapacity(null, grid.items().len);
+
+    var known_ids = lib_grid.Grid(?Id){ .grid = id_grid, .cols = grid.cols };
+    var next_id: Id = 0;
+
+    for (0..known_ids.get_lines()) |i| {
+        for (0..known_ids.cols) |j| {
+            const pos = Position{ .i = i, .j = j };
+            if (known_ids.get(pos).? == null) {
+                const info = try traverse_region(grid, pos, next_id, &known_ids);
+                try regions.put(next_id, info);
+                next_id += 1;
+            }
+        }
+    }
+
+    return regions;
+}
+
+fn get_regions_price(regions: []const Info) usize {
+    var price: usize = 0;
+    for (regions) |info| {
+        price += info.perimeter * info.area;
+    }
+    return price;
+}
 
 fn traverse_region(grid: *const Grid, pos: Position, id: Id, known_ids: *lib_grid.Grid(?Id)) !Info {
     const letter = grid.get(pos) orelse @panic("position outside of grid");
@@ -43,7 +52,7 @@ fn traverse_region(grid: *const Grid, pos: Position, id: Id, known_ids: *lib_gri
     };
 
     while (queue.popOrNull()) |check_pos| {
-        std.log.debug("checking pos {any}", .{check_pos});
+        // std.log.debug("checking pos {any}", .{check_pos});
         const maybe_id = known_ids.get_mut(check_pos).?;
         if (maybe_id.* != null) {
             continue;
@@ -93,13 +102,20 @@ pub fn main() !void {
 
     const grid = try Grid.new(data, parse_fn, allocator);
 
-    var id_grid = try std.ArrayList(?Id).initCapacity(grid.get_allocator(), grid.items().len);
-    id_grid.appendNTimesAssumeCapacity(null, grid.items().len);
-    var known_ids = lib_grid.Grid(?Id){ .grid = id_grid, .cols = grid.cols };
-    const a_info = try traverse_region(&grid, Position{ .i = 1, .j = 3 }, 1, &known_ids);
-
     const formatter = grid.formatter(std.fmt.formatIntValue);
+    std.log.debug("{c: <3}", .{formatter});
 
-    std.log.info("{c: <3}", .{formatter});
-    std.log.info("{any}", .{a_info});
+    switch (args.part) {
+        .a => {
+            const regions = try get_regions(&grid);
+            for (regions.values()) |info| {
+                std.log.debug("[{c}] area: {d} perimeter: {d}", info);
+            }
+            const price = get_regions_price(regions.values());
+            std.log.info("price {d}", .{price});
+        },
+        .b => {
+            @panic("unimplemented");
+        },
+    }
 }
