@@ -22,6 +22,17 @@ pub const Direction = enum {
     left,
     right,
 
+    /// Rotates clockwise.
+    pub fn rotate(self: Direction) Direction {
+        return switch (self) {
+            .up => .right,
+            .right => .down,
+            .down => .left,
+            .left => .up,
+        };
+    }
+
+    /// Rotates without going back to up.
     pub fn rotate_no_repeat(self: Direction) ?Direction {
         return switch (self) {
             .up => .right,
@@ -72,6 +83,11 @@ pub fn Grid(comptime T: type) type {
             };
         }
 
+        pub fn deinit(self: Self) void {
+            self.grid.deinit();
+        }
+
+        /// Returns null if out of bounds.
         pub fn get(self: *const Self, pos: Position) ?T {
             const idx = self.get_idx(pos) orelse return null;
             return self.grid.items[idx];
