@@ -194,10 +194,15 @@ fn gen_fmt(comptime T: type, t_format: *const fn (T, comptime []const u8, std.fm
         pub fn format(self: Self, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
             const cols = self.grid.cols;
             const lines = self.grid.get_lines();
+
+            const lines_width = std.math.log10_int(lines) + 1;
+            var lines_options = options;
+            lines_options.width = lines_width;
+
             try writer.writeAll("grid:\n");
 
-            try std.fmt.formatIntValue(' ', "c", options, writer);
-            try writer.writeAll("\x1b[1;95m");
+            try std.fmt.formatIntValue(' ', "c", lines_options, writer);
+            try writer.writeAll(" \x1b[1;95m");
             for (0..cols) |col| {
                 try std.fmt.formatIntValue(col, "d", options, writer);
             }
@@ -205,8 +210,8 @@ fn gen_fmt(comptime T: type, t_format: *const fn (T, comptime []const u8, std.fm
 
             for (0..lines) |i| {
                 try writer.writeAll("\x1b[1;95m");
-                try std.fmt.formatIntValue(i, "d", options, writer);
-                try writer.writeAll("\x1b[0m");
+                try std.fmt.formatIntValue(i, "d", lines_options, writer);
+                try writer.writeAll(" \x1b[0m");
                 for (0..cols) |j| {
                     const item = self.grid.get(Position{ .i = i, .j = j }).?;
                     try t_format(item, fmt, options, writer);
