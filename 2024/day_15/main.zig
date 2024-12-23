@@ -57,7 +57,7 @@ const Map = struct {
         }
     }
 
-    /// Moves the robot returning whether the rebot moved.
+    /// Moves the robot returning whether the robot moved.
     fn move_robot(self: *Map, direction: libgrid.Direction) bool {
         var maybe_candidate_pos = self.robot_pos.move(direction);
 
@@ -170,7 +170,43 @@ const WideMap = struct {
         return WideMap{ .grid = wide_grid, .robot_pos = robot_pos };
     }
 
-    /// Moves the robot returning whether the rebot moved.
+    fn move_robot_left(self: *WideMap) bool {
+        var maybe_candidate_pos = self.robot_pos.move(.left);
+
+        while (maybe_candidate_pos) |candidate_pos| {
+            const next_tile = self.grid.get_mut(candidate_pos) orelse return false;
+            switch (next_tile.*) {
+                .wall => return false,
+                .empty => {
+                    // "pull" the boxes from the left to the right so that the
+                    // position where the robot should go is "empty"
+                    for (candidate_pos.j..self.robot_pos.j) |alt_j| {
+                        const cur_pos = libgrid.Position{ .i = candidate_pos.i, .j = alt_j };
+                        const rhs_pos = libgrid.Position{ .i = candidate_pos.i, .j = alt_j + 1 };
+                        self.grid.get_mut(cur_pos).?.* = self.grid.get(rhs_pos).?;
+                    }
+                    // now empty where the robot used to be and update its position
+                    self.grid.get_mut(self.robot_pos).?.* = .empty;
+                    self.robot_pos = self.robot_pos.move(.left).?;
+                    return true;
+                },
+                .leftBox => {
+                    // maybe we can move this, try the next position
+                    maybe_candidate_pos = candidate_pos.move(.left);
+                },
+
+                .rightBox => {
+                    // maybe we can move this, try the next position
+                    maybe_candidate_pos = candidate_pos.move(.left);
+                },
+                .robot => @panic("robot found robot while moving"),
+            }
+        }
+
+        return false;
+    }
+
+    /// Moves the robot returning whether the robot moved.
     fn move_robot(self: *WideMap, direction: libgrid.Direction) bool {
         var maybe_candidate_pos = self.robot_pos.move(direction);
 
@@ -297,8 +333,13 @@ pub fn main() !void {
             std.log.info("sum gps {d}", .{sum_gps});
         },
         .b => {
-            const wide_map = try WideMap.from_map(map);
+            var wide_map = try WideMap.from_map(map);
             std.debug.print("wide map:\n{d}", .{wide_map});
+            std.debug.print("robot_pos: {d}, {d}\n", wide_map.robot_pos);
+            for (0..41) |_| {
+                _ = wide_map.move_robot_left();
+                std.debug.print("wide map after moving left:\n{d}", .{wide_map});
+            }
             const sum_gps = wide_map.sum_gps();
             std.log.info("sum gps {d}", .{sum_gps});
         },
