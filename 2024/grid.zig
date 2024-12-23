@@ -247,12 +247,21 @@ fn gen_fmt(comptime T: type, t_format: *const fn (T, comptime []const u8, std.fm
             var lines_options = options;
             lines_options.width = lines_width;
 
+            const cols_mod = std.math.pow(usize, 10, options.width orelse 1);
+
             try writer.writeAll("grid:\n");
 
             try std.fmt.formatIntValue(' ', "c", lines_options, writer);
             try writer.writeAll(" \x1b[1;95m");
             for (0..cols) |col| {
-                try std.fmt.formatIntValue(col, "d", options, writer);
+                const col_header = col % cols_mod;
+                if (col_header == 0) {
+                    try writer.writeAll("\x1b[4;35m");
+                    try std.fmt.formatIntValue(col_header, "d", options, writer);
+                    try writer.writeAll("\x1b[0m\x1b[1;95m");
+                } else {
+                    try std.fmt.formatIntValue(col_header, "d", options, writer);
+                }
             }
             try writer.writeAll("\x1b[0m\n");
 
