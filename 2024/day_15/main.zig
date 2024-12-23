@@ -206,6 +206,44 @@ const WideMap = struct {
         return false;
     }
 
+    fn move_robot_right(self: *WideMap) bool {
+        var maybe_candidate_pos = self.robot_pos.move(.right);
+
+        while (maybe_candidate_pos) |candidate_pos| {
+            const next_tile = self.grid.get_mut(candidate_pos) orelse return false;
+            switch (next_tile.*) {
+                .wall => return false,
+                .empty => {
+                    // "pull" the boxes from the right to the left so that the
+                    // position where the robot should go is "empty"
+                    var alt_j = candidate_pos.j;
+                    while (alt_j > self.robot_pos.j) {
+                        const cur_pos = libgrid.Position{ .i = candidate_pos.i, .j = alt_j };
+                        alt_j -= 1;
+                        const lhs_pos = libgrid.Position{ .i = candidate_pos.i, .j = alt_j };
+                        self.grid.get_mut(cur_pos).?.* = self.grid.get(lhs_pos).?;
+                    }
+                    // now empty where the robot used to be and update its position
+                    self.grid.get_mut(self.robot_pos).?.* = .empty;
+                    self.robot_pos = self.robot_pos.move(.right).?;
+                    return true;
+                },
+                .leftBox => {
+                    // maybe we can move this, try the next position
+                    maybe_candidate_pos = candidate_pos.move(.right);
+                },
+
+                .rightBox => {
+                    // maybe we can move this, try the next position
+                    maybe_candidate_pos = candidate_pos.move(.right);
+                },
+                .robot => @panic("robot found robot while moving"),
+            }
+        }
+
+        return false;
+    }
+
     /// Moves the robot returning whether the robot moved.
     fn move_robot(self: *WideMap, direction: libgrid.Direction) bool {
         var maybe_candidate_pos = self.robot_pos.move(direction);
@@ -336,9 +374,9 @@ pub fn main() !void {
             var wide_map = try WideMap.from_map(map);
             std.debug.print("wide map:\n{d}", .{wide_map});
             std.debug.print("robot_pos: {d}, {d}\n", wide_map.robot_pos);
-            for (0..41) |_| {
-                _ = wide_map.move_robot_left();
-                std.debug.print("wide map after moving left:\n{d}", .{wide_map});
+            for (0..13) |_| {
+                _ = wide_map.move_robot_right();
+                std.debug.print("wide map after moving right:\n{d}", .{wide_map});
             }
             const sum_gps = wide_map.sum_gps();
             std.log.info("sum gps {d}", .{sum_gps});
