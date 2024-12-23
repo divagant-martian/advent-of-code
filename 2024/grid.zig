@@ -172,6 +172,54 @@ pub fn Grid(comptime T: type) type {
         pub fn formatter(self: *const Self, T_format: *const fn (T, comptime []const u8, std.fmt.FormatOptions, anytype) anyerror!void) gen_fmt(T, T_format) {
             return gen_fmt(T, T_format){ .grid = self };
         }
+
+        pub fn iterator(self: *const Self) Iter {
+            return Iter{ .grid = self };
+        }
+
+        pub const Iter = struct {
+            idx: ?usize = 0,
+            grid: *const Self,
+
+            pub fn next(self: *Self.Iter) ?struct { position: Position, value: *const T } {
+                if (self.idx) |index| {
+                    const value = &self.grid.grid.items[index];
+                    const pos = Position{ .i = index / self.grid.cols, .j = index % self.grid.cols };
+                    if (index + 1 < self.grid.grid.items.len) {
+                        self.idx = index + 1;
+                    } else {
+                        self.idx = null;
+                    }
+                    return .{ .position = pos, .value = value };
+                }
+
+                return null;
+            }
+        };
+
+        pub fn iterator_mut(self: *Self) IterMut {
+            return IterMut{ .grid = self };
+        }
+
+        pub const IterMut = struct {
+            idx: ?usize = 0,
+            grid: *const Self,
+
+            pub fn next(self: *Self.PosIter) ?struct { position: Position, value: *T } {
+                if (self.idx) |index| {
+                    const value = &self.grid.grid.items[index];
+                    const pos = self.grid.get_pos(index);
+                    if (index + 1 < self.grid.grid.items.len) {
+                        self.idx = index + 1;
+                    } else {
+                        self.idx = null;
+                    }
+                    return .{ .position = pos, .value = value };
+                }
+
+                return null;
+            }
+        };
     };
 }
 
