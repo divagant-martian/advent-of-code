@@ -170,72 +170,44 @@ const WideMap = struct {
         return WideMap{ .grid = wide_grid, .robot_pos = robot_pos };
     }
 
-    fn move_robot_left(self: *WideMap) bool {
-        var maybe_candidate_pos = self.robot_pos.move(.left);
+    fn move_robot_hotizontally(self: *WideMap, dir: enum { left, right }) bool {
+        const direction: libgrid.Direction = switch (dir) {
+            .left => .left,
+            .right => .right,
+        };
+        var maybe_candidate_pos = self.robot_pos.move(direction);
 
         while (maybe_candidate_pos) |candidate_pos| {
             const next_tile = self.grid.get_mut(candidate_pos) orelse return false;
             switch (next_tile.*) {
                 .wall => return false,
                 .empty => {
-                    // "pull" the boxes from the left to the right so that the
-                    // position where the robot should go is "empty"
-                    for (candidate_pos.j..self.robot_pos.j) |alt_j| {
-                        const cur_pos = libgrid.Position{ .i = candidate_pos.i, .j = alt_j };
-                        const rhs_pos = libgrid.Position{ .i = candidate_pos.i, .j = alt_j + 1 };
-                        self.grid.get_mut(cur_pos).?.* = self.grid.get(rhs_pos).?;
-                    }
-                    // now empty where the robot used to be and update its position
-                    self.grid.get_mut(self.robot_pos).?.* = .empty;
-                    self.robot_pos = self.robot_pos.move(.left).?;
-                    return true;
-                },
-                .leftBox => {
-                    // maybe we can move this, try the next position
-                    maybe_candidate_pos = candidate_pos.move(.left);
-                },
-
-                .rightBox => {
-                    // maybe we can move this, try the next position
-                    maybe_candidate_pos = candidate_pos.move(.left);
-                },
-                .robot => @panic("robot found robot while moving"),
-            }
-        }
-
-        return false;
-    }
-
-    fn move_robot_right(self: *WideMap) bool {
-        var maybe_candidate_pos = self.robot_pos.move(.right);
-
-        while (maybe_candidate_pos) |candidate_pos| {
-            const next_tile = self.grid.get_mut(candidate_pos) orelse return false;
-            switch (next_tile.*) {
-                .wall => return false,
-                .empty => {
-                    // "pull" the boxes from the right to the left so that the
+                    // "push" right the boxes from the right to the left so that the
                     // position where the robot should go is "empty"
                     var alt_j = candidate_pos.j;
-                    while (alt_j > self.robot_pos.j) {
-                        const cur_pos = libgrid.Position{ .i = candidate_pos.i, .j = alt_j };
-                        alt_j -= 1;
-                        const lhs_pos = libgrid.Position{ .i = candidate_pos.i, .j = alt_j };
-                        self.grid.get_mut(cur_pos).?.* = self.grid.get(lhs_pos).?;
+                    while (alt_j != self.robot_pos.j) {
+                        const curr_pos = libgrid.Position{ .i = candidate_pos.i, .j = alt_j };
+                        switch (dir) {
+                            .right => alt_j -= 1,
+                            .left => alt_j += 1,
+                        }
+                        const next_pos = libgrid.Position{ .i = candidate_pos.i, .j = alt_j };
+                        self.grid.get_mut(curr_pos).?.* = self.grid.get(next_pos).?;
                     }
+
                     // now empty where the robot used to be and update its position
                     self.grid.get_mut(self.robot_pos).?.* = .empty;
-                    self.robot_pos = self.robot_pos.move(.right).?;
+                    self.robot_pos = self.robot_pos.move(direction).?;
                     return true;
                 },
                 .leftBox => {
                     // maybe we can move this, try the next position
-                    maybe_candidate_pos = candidate_pos.move(.right);
+                    maybe_candidate_pos = candidate_pos.move(direction);
                 },
 
                 .rightBox => {
                     // maybe we can move this, try the next position
-                    maybe_candidate_pos = candidate_pos.move(.right);
+                    maybe_candidate_pos = candidate_pos.move(direction);
                 },
                 .robot => @panic("robot found robot while moving"),
             }
@@ -375,7 +347,7 @@ pub fn main() !void {
             std.debug.print("wide map:\n{d}", .{wide_map});
             std.debug.print("robot_pos: {d}, {d}\n", wide_map.robot_pos);
             for (0..13) |_| {
-                _ = wide_map.move_robot_right();
+                _ = wide_map.move_robot_hotizontally(.left);
                 std.debug.print("wide map after moving right:\n{d}", .{wide_map});
             }
             const sum_gps = wide_map.sum_gps();
