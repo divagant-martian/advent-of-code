@@ -9,6 +9,8 @@ pub const std_options = .{
 const Str: type = []const u8;
 const Int: type = i32;
 
+const VerticalDir = enum { up, down };
+
 const Tile = enum {
     wall,
     box,
@@ -216,43 +218,100 @@ const WideMap = struct {
         return false;
     }
 
-    /// Moves the robot returning whether the robot moved.
-    fn move_robot(self: *WideMap, direction: libgrid.Direction) bool {
-        var maybe_candidate_pos = self.robot_pos.move(direction);
+    /// Checks if `pos` can be moved in the given direction.
+    ///
+    /// Will return the list of nodes to be moved, starting from the last one.
+    fn can_move(self: *const WideMap, dir: VerticalDir) !?std.ArrayList(libgrid.Position) {
+        const allocator = self.grid.get_allocator();
+        const direction: libgrid.Direction = switch (dir) {
+            .up => .up,
+            .down => .down,
+        };
+        var to_check = std.AutoArrayHashMap(libgrid.Position, void).init(allocator);
+        defer to_check.deinit();
+        var to_move = std.ArrayList(libgrid.Position).init(allocator);
+        try to_check.put(self.robot_pos, {});
+        while (true) {
+            const pos = to_check.keys()[0];
+            to_check.orderedRemoveAt(0);
+            // there is always wall ahead and we should never try to move a wall.
+            const next_pos = pos.move(direction).?;
+            const next_tile = self.grid.get(next_pos).?;
+            switch (next_tile) {
+                .leftBox => {
+                    if (!to_check.contains(next_pos)) {
+                        try to_check.put(next_pos, {});
+                    }
 
-        while (maybe_candidate_pos) |candidate_pos| {
-            const next_tile = self.grid.get_mut(candidate_pos) orelse return false;
-            switch (next_tile.*) {
-                .wall => return false,
-                .empty => {
-                    // robot simply Moves
-                    next_tile.* = .box;
-                    self.grid.get_mut(self.robot_pos).?.* = .empty;
-                    // to deal with the case of multiple moved boxes, we
-                    // recalculate where the robot ends, since candidate_pos
-                    // might not be next to robot_pos anymore.
-                    self.robot_pos = self.robot_pos.move(direction).?;
-                    self.grid.get_mut(self.robot_pos).?.* = .robot;
-                    return true;
+                    const right_box = next_pos.move(.right).?;
+                    if (!to_check.contains(right_box)) {
+                        try to_check.put(right_box, {});
+                    }
                 },
-                .box => {
-                    // maybe we can move this, try the next position
-                    maybe_candidate_pos = candidate_pos.move(direction);
+                .rightBox => {
+                    const left_box = next_pos.move(.left).?;
+                    if (!to_check.contains(left_box)) {
+                        try to_check.put(left_box, {});
+                    }
+
+                    if (!to_check.contains(next_pos)) {
+                        try to_check.put(next_pos, {});
+                    }
                 },
+                .wall => {
+                    to_move.deinit();
+                    return null;
+                },
+                .empty => {},
                 .robot => @panic("robot found robot while moving"),
             }
+            try to_move.append(pos);
+            // std.log.debug("appending {}, {} to to_move", .{ pos.i, pos.j });
+            if (to_check.count() == 0) {
+                break;
+            }
+        }
+
+        return to_move;
+    }
+
+    fn move_robot_vertically(self: *WideMap, dir: VerticalDir) !bool {
+        var maybe_can_move = try self.can_move(dir);
+        if (maybe_can_move) |*to_move| {
+            defer to_move.deinit();
+            const direction: libgrid.Direction = switch (dir) {
+                .up => .up,
+                .down => .down,
+            };
+            while (to_move.popOrNull()) |move_pos| {
+                const curr = self.grid.get_mut(move_pos).?;
+                self.grid.get_mut(move_pos.move(direction).?).?.* = curr.*;
+                curr.* = .empty;
+            }
+            self.robot_pos = self.robot_pos.move(direction).?;
+            return true;
         }
 
         return false;
     }
 
-    fn move_robot_in_bulk(self: *WideMap, directions: []const libgrid.Direction, enable_debug: bool) void {
+    /// Moves the robot returning whether the robot moved.
+    fn move_robot(self: *WideMap, direction: libgrid.Direction) !bool {
+        return switch (direction) {
+            .up => try self.move_robot_vertically(.up),
+            .down => try self.move_robot_vertically(.down),
+            .left => self.move_robot_hotizontally(.left),
+            .right => self.move_robot_hotizontally(.right),
+        };
+    }
+
+    fn move_robot_in_bulk(self: *WideMap, directions: []const libgrid.Direction, enable_debug: bool) !void {
         if (enable_debug) {
             std.log.debug("wide grid:\n{d}", .{self});
         }
 
         for (directions) |dir| {
-            _ = self.move_robot(dir);
+            _ = try self.move_robot(dir);
             if (enable_debug) {
                 std.log.debug("moved to {any}\n{d}", .{ dir, self });
             }
@@ -286,7 +345,7 @@ const wide_grid_fmt = struct {
     ) !void {
         _ = fmt;
         const char: u8 = switch (value) {
-            .empty => '.',
+            .empty => ' ',
             .robot => '@',
             .wall => '#',
             .leftBox => '[',
@@ -332,7 +391,14 @@ pub fn main() !void {
     var sections = std.mem.tokenizeSequence(u8, data, "\n\n");
 
     var map = try Map.parse(sections.next().?, allocator);
-    const instructions = try parse_instructions(sections.next().?, allocator);
+    var instructions_str: []const u8 = undefined;
+
+    if (args_iter.next()) |next_arg| {
+        instructions_str = next_arg;
+    } else {
+        instructions_str = sections.next().?;
+    }
+    const instructions = try parse_instructions(instructions_str, allocator);
 
     switch (args.part) {
         .a => {
@@ -344,12 +410,7 @@ pub fn main() !void {
         },
         .b => {
             var wide_map = try WideMap.from_map(map);
-            std.debug.print("wide map:\n{d}", .{wide_map});
-            std.debug.print("robot_pos: {d}, {d}\n", wide_map.robot_pos);
-            for (0..13) |_| {
-                _ = wide_map.move_robot_hotizontally(.left);
-                std.debug.print("wide map after moving right:\n{d}", .{wide_map});
-            }
+            try wide_map.move_robot_in_bulk(instructions.items, true);
             const sum_gps = wide_map.sum_gps();
             std.log.info("sum gps {d}", .{sum_gps});
         },
