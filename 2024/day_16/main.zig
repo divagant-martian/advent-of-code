@@ -1,5 +1,6 @@
 const std = @import("std");
 const libgrid = @import("grid");
+const Sorted = @import("sorted_array").Sorted;
 const Args = @import("args").Args;
 
 pub const std_options = .{
@@ -73,73 +74,81 @@ const Map = struct {
     }
 
     fn shortest_path(self: *const Map) !usize {
-        const Node = struct { pos: libgrid.Position, dir: libgrid.Direction };
-        const NodeInfo = struct { dist: usize, prev: Node, visited: bool };
-        const QueuedNode = struct { node: Node, dist: usize };
+        const Node = struct {
+            pos: libgrid.Position,
+            dir: libgrid.Direction,
 
-        var node_infos = std.AutoHashMap(Node, NodeInfo).init(self.grid.get_allocator());
-        defer node_infos.deinit();
-
-        const cmp_fn = struct {
-            fn cmp(_: void, a: QueuedNode, b: QueuedNode) std.math.Order {
-                return std.math.order(a.dist, b.dist);
+            pub fn eq(this: *const @This(), other: *const @This()) bool {
+                return this.dir == other.dir and this.pos.eq(&other.pos);
             }
-        }.cmp;
-        var queue = std.PriorityQueue(QueuedNode, void, cmp_fn).init(self.grid.get_allocator(), {});
-        defer queue.deinit();
+        };
 
+        const NodeInfo = struct { dist: usize, prev: Node };
+
+        const allocator = self.grid.get_allocator();
+
+        const CompCtx = struct {
+            info: std.AutoHashMap(Node, NodeInfo),
+
+            const MaxDist: usize = std.math.maxInt(usize);
+
+            pub fn compare(me: *const @This(), a: *const Node, b: *const Node) std.math.Order {
+                return std.math.order(me.distance(a), me.distance(b));
+            }
+
+            pub fn distance(me: *const @This(), item: *const Node) usize {
+                if (me.info.get(item.*)) |info| {
+                    return info.dist;
+                }
+                return @This().MaxDist;
+            }
+
+            pub fn put(me: *@This(), item: Node, dist: usize, prev: Node) !void {
+                try me.info.put(item, .{ .dist = dist, .prev = prev });
+            }
+        };
+
+        var comp_ctx = CompCtx{ .info = std.AutoHashMap(Node, NodeInfo).init(allocator) };
+
+        // initialization: the start node has distance 0 and goes in the queue
         const start_node = Node{ .pos = self.start, .dir = .right };
-        try node_infos.put(start_node, NodeInfo{ .dist = 0, .prev = start_node, .visited = false });
-        try queue.add(.{ .node = start_node, .dist = 0 });
+        try comp_ctx.put(start_node, 0, start_node);
 
-        while (queue.count() > 0) {
-            const curr = queue.remove().node;
+        var sorted = Sorted(Node).init(allocator);
+        try sorted.add(start_node, &comp_ctx);
 
-            const curr_info = node_infos.getPtr(curr).?;
-            const curr_dist = curr_info.*.dist;
+        // process the queue
+        while (sorted.pop_back()) |curr| {
+            var neighbors = self.grid.neighbors(curr.pos);
+            while (neighbors.next()) |neighbor| {
 
-            curr_info.*.visited = true;
-
-            var neighbor_iter = self.grid.neighbors(curr.pos);
-            while (neighbor_iter.next()) |neighbor| {
-                if (self.grid.get(neighbor.pos).? == .wall) {
+                // check if it's worth expanding
+                if (neighbor.item == .wall) {
                     continue;
                 }
 
-                const neighbor_dir = curr.pos.direction(&neighbor.pos);
-                const neighbor_node = Node{ .pos = neighbor.pos, .dir = neighbor_dir };
-                const neighbor_info_ptr = node_infos.getPtr(neighbor_node);
+                // this tile is worth expanding, we need to figure out what
+                // node it is based on what direction we end up if we go there
+                const node = Node{ .pos = neighbor.pos, .dir = curr.pos.direction(&neighbor.pos) };
 
-                if (neighbor_info_ptr) |neighbor_info| {
-                    if (neighbor_info.visited) {
-                        continue;
+                const neighbor_dist = comp_ctx.distance(&node);
+                const relative_dist: usize = 1 + 1000 * curr.dir.count_rotations(node.dir);
+                const dist_via_me = comp_ctx.distance(&curr) + relative_dist;
+
+                if (dist_via_me < neighbor_dist) {
+                    try comp_ctx.put(node, dist_via_me, curr);
+                    if (sorted.find_index(&node, Node.eq)) |remove_idx| {
+                        _ = sorted.remove(remove_idx);
                     }
-                }
-
-                const relative_dist = 1 + 1000 * curr.dir.count_rotations(neighbor_dir);
-                const alt_dist = curr_dist + relative_dist;
-
-                if (neighbor_info_ptr) |neighbor_info| {
-                    if (neighbor_info.dist > alt_dist) {
-                        neighbor_info.* = .{ .dist = alt_dist, .prev = curr, .visited = neighbor_info.*.visited };
-                        queue.update(.{ .node = neighbor_node, .dist = neighbor_info.dist }, .{ .node = neighbor_node, .dist = alt_dist }) catch {
-                            try queue.add(.{ .node = neighbor_node, .dist = alt_dist });
-                        };
-                    } else {
-                        queue.update(.{ .node = neighbor_node, .dist = neighbor_info.dist }, .{ .node = neighbor_node, .dist = std.math.maxInt(usize) }) catch {
-                            try queue.add(.{ .node = neighbor_node, .dist = std.math.maxInt(usize) });
-                        };
-                    }
-                } else {
-                    try node_infos.put(neighbor_node, .{ .dist = alt_dist, .prev = curr, .visited = false });
-                    try queue.add(.{ .node = neighbor_node, .dist = alt_dist });
+                    try sorted.add(node, &comp_ctx);
                 }
             }
         }
 
         var best_end: ?Node = null;
         var best_dist: usize = std.math.maxInt(usize);
-        var iter = node_infos.iterator();
+
+        var iter = comp_ctx.info.iterator();
 
         while (iter.next()) |entry| {
             if (entry.key_ptr.pos.eq(&self.end)) {
@@ -167,7 +176,7 @@ const Map = struct {
         var curr = best_end orelse unreachable;
 
         while (!curr.pos.eq(&self.start)) {
-            const prev = node_infos.get(curr).?.prev;
+            const prev = comp_ctx.info.get(curr).?.prev;
             sp_grid.get_mut(prev.pos).?.* = switch (curr.dir) {
                 .up => "\x1b[1;33m^\x1b[0m",
                 .down => "\x1b[1;33mv\x1b[0m",

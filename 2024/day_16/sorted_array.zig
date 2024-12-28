@@ -32,7 +32,7 @@ pub fn Sorted(comptime T: type) type {
 
         pub fn find_index(self: *const Self, item: *const T, eq_fn: fn (*const T, *const T) bool) ?usize {
             for (self.inner.items, 0..) |at_idx, idx| {
-                if (eq_fn(at_idx, item)) {
+                if (eq_fn(&at_idx, item)) {
                     return idx;
                 }
             }
