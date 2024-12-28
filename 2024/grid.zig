@@ -4,8 +4,8 @@ pub const Position = struct {
     i: usize,
     j: usize,
 
-    pub fn move(self: *const Position, direction: Direction) ?Position {
-        const delta_i, const delta_j = direction.as_deltas();
+    pub fn move(self: *const Position, dir: Direction) ?Position {
+        const delta_i, const delta_j = dir.as_deltas();
         const i = pos_with_offset(self.i, delta_i) orelse return null;
         const j = pos_with_offset(self.j, delta_j) orelse return null;
         return Position{ .i = i, .j = j };
@@ -13,6 +13,29 @@ pub const Position = struct {
 
     pub fn neighbors(self: *const Position) [4]?Position {
         return [4]?Position{ self.move(.up), self.move(.down), self.move(.left), self.move(.right) };
+    }
+
+    /// Computes the direction such that `self.move(direction)` returns `other`.
+    pub fn direction(self: *const Position, other: *const Position) Direction {
+        if (self.i == other.i) {
+            if (self.j > other.j) {
+                return .left;
+            } else {
+                return .right;
+            }
+        } else if (self.j == other.j) {
+            if (self.i > other.i) {
+                return .up;
+            } else {
+                return .down;
+            }
+        } else {
+            unreachable;
+        }
+    }
+
+    pub fn eq(self: *const Position, other: *const Position) bool {
+        return (self.i == other.i) and (self.j == other.j);
     }
 };
 
@@ -50,6 +73,27 @@ pub const Direction = enum {
             .right => .{ 0, 1 },
         };
     }
+
+    pub fn opposite(self: Direction) Direction {
+        const out: Direction = switch (self) {
+            .up => .down,
+            .left => .right,
+            .down => .up,
+            .right => .left,
+        };
+
+        return out;
+    }
+
+    pub fn count_rotations(self: Direction, other: Direction) usize {
+        if (self == other) {
+            return 0;
+        } else if (self.opposite() == other) {
+            return 2;
+        } else {
+            return 1;
+        }
+    }
 };
 
 pub fn Grid(comptime T: type) type {
@@ -76,6 +120,16 @@ pub fn Grid(comptime T: type) type {
                 }
                 cols = row_cols;
             }
+
+            return .{
+                .grid = grid,
+                .cols = cols,
+            };
+        }
+
+        pub fn repeat(value: T, lines: usize, cols: usize, allocator: std.mem.Allocator) !Self {
+            var grid = try std.ArrayList(T).initCapacity(allocator, lines * cols);
+            grid.appendNTimesAssumeCapacity(value, lines * cols);
 
             return .{
                 .grid = grid,
