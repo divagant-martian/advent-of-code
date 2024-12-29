@@ -68,6 +68,60 @@ const Program = struct {
 
         return Program{ .a_reg = a_reg, .b_reg = b_reg, .c_reg = c_reg, .instruction_pointer = 0, .operations = operations };
     }
+
+    fn step(self: *Program) union(enum) { halt, out: ?u3 } {
+        if (self.instruction_pointer >= self.operations.items.len) {
+            return .halt;
+        }
+
+        defer self.instruction_pointer += 1;
+        const op = self.operations.items[self.instruction_pointer];
+        const operand = op.operand;
+        var out: ?u3 = null;
+        switch (op.opcode) {
+            .a_div => {
+                const numerator = self.a_reg;
+                const denominator = std.math.powi(usize, 2, self.combo_operand(operand)) catch @panic("(over/under)flow");
+                self.a_reg = numerator / denominator;
+            },
+            .b_div => {
+                const numerator = self.a_reg;
+                const denominator = std.math.powi(usize, 2, self.combo_operand(operand)) catch @panic("(over/under)flow");
+                self.b_reg = numerator / denominator;
+            },
+            .c_div => {
+                const numerator = self.a_reg;
+                const denominator = std.math.powi(usize, 2, self.combo_operand(operand)) catch @panic("(over/under)flow");
+                self.c_reg = numerator / denominator;
+            },
+            .b_xor => {
+                self.b_reg ^= operand;
+            },
+            .b_str => {
+                self.b_reg = self.combo_operand(operand) % 8;
+            },
+            .b_xor_c => {
+                self.b_reg ^= self.c_reg;
+            },
+            .jnz => {
+                if (!self.a_reg == 0) {}
+            }
+            .out => {
+                out = @intCast(self.combo_operand(operand) % 8);
+            },
+        }
+        return .{ .out = out };
+    }
+
+    fn combo_operand(self: *const Program, value: u3) usize {
+        return switch (value) {
+            0...3 => value,
+            4 => self.a_reg,
+            5 => self.b_reg,
+            6 => self.c_reg,
+            7 => @panic("this is part b"),
+        };
+    }
 };
 
 pub fn main() !void {
@@ -84,6 +138,8 @@ pub fn main() !void {
 
     var buf_reader = std.io.bufferedReader(file.reader());
     const data = try buf_reader.reader().readAllAlloc(allocator, std.math.maxInt(usize));
-    const program = try Program.parse(data, allocator);
+    var program = try Program.parse(data, allocator);
     std.debug.print("{any}", .{program});
+    const whatever = program.step();
+    std.debug.print("{any}", .{whatever});
 }
