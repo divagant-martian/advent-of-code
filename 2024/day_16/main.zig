@@ -10,8 +10,6 @@ pub const std_options = .{
 const Str: type = []const u8;
 const Int: type = i32;
 
-const VerticalDir = enum { up, down };
-
 const Tile = enum {
     wall,
     start,
@@ -30,6 +28,106 @@ const Tile = enum {
         };
 
         return tile;
+    }
+};
+
+const Node = struct {
+    pos: libgrid.Position,
+    dir: libgrid.Direction,
+
+    pub fn eq(this: *const @This(), other: *const @This()) bool {
+        return this.dir == other.dir and this.pos.eq(&other.pos);
+    }
+};
+
+const NodeInfo = struct { dist: usize, prev: Node, other_prevs: std.AutoArrayHashMap(Node, void) };
+
+const Path: type = std.ArrayList(Node);
+const PartialPath = struct { expanded: Path, next_nodes: std.ArrayList(Node) };
+
+const CompCtx = struct {
+    info: std.AutoHashMap(Node, NodeInfo),
+
+    const MaxDist: usize = std.math.maxInt(usize);
+
+    pub fn compare(self: *const @This(), a: *const Node, b: *const Node) std.math.Order {
+        return std.math.order(self.distance(a), self.distance(b));
+    }
+
+    pub fn distance(self: *const @This(), item: *const Node) usize {
+        if (self.info.get(item.*)) |info| {
+            return info.dist;
+        }
+        return @This().MaxDist;
+    }
+
+    pub fn put(self: *@This(), item: Node, dist: usize, prev: Node) !void {
+        try self.info.put(item, .{ .dist = dist, .prev = prev, .other_prevs = std.AutoArrayHashMap(Node, void).init(self.info.allocator) });
+    }
+
+    /// Expands a path one node.
+    ///
+    /// Returns whether this path is now fully expanded
+    pub fn expand_path_once(self: *const @This(), partial_path: *const Path, next: Node) !PartialPath {
+        var expanded_path = try partial_path.clone();
+        try expanded_path.append(next);
+        const next_info = self.info.get(next).?;
+        var next_nodes = std.ArrayList(Node).init(self.info.allocator);
+        if (next.eq(&next_info.prev)) {
+            return .{ .expanded = expanded_path, .next_nodes = next_nodes };
+        } else {
+            try next_nodes.appendSlice(next_info.other_prevs.keys());
+            try next_nodes.append(next_info.prev);
+            return .{ .expanded = expanded_path, .next_nodes = next_nodes };
+        }
+    }
+
+    pub fn shortest_distance(self: *const CompCtx, pos: libgrid.Position) usize {
+        var best_dist = CompCtx.MaxDist;
+        for ([_]libgrid.Direction{ .up, .down, .left, .right }) |dir| {
+            const node = Node{ .pos = pos, .dir = dir };
+            const node_dist = self.distance(&node);
+            if (node_dist < best_dist) {
+                best_dist = node_dist;
+            }
+        }
+        return best_dist;
+    }
+
+    pub fn shortest_paths(self: *const CompCtx, end_pos: libgrid.Position) !std.ArrayList(std.ArrayList(Node)) {
+        const allocator = self.info.allocator;
+        var paths = std.ArrayList(Path).init(allocator);
+
+        const best_dist = self.shortest_distance(end_pos);
+        var queue = std.ArrayList(PartialPath).init(allocator);
+
+        // start by adding the terminal nodes with the best distance
+        for ([_]libgrid.Direction{ .up, .down, .left, .right }) |dir| {
+            const end_node = Node{ .pos = end_pos, .dir = dir };
+            const node_dist = self.distance(&end_node);
+            if (node_dist == best_dist) {
+                var next_nodes = std.ArrayList(Node).init(allocator);
+                try next_nodes.append(end_node);
+                const partial_path = PartialPath{ .expanded = Path.init(allocator), .next_nodes = next_nodes };
+                try queue.append(partial_path);
+            }
+        }
+
+        while (queue.popOrNull()) |partial_path| {
+            for (partial_path.next_nodes.items) |next| {
+                const expanded_partial_path = try self.expand_path_once(&partial_path.expanded, next);
+                if (expanded_partial_path.next_nodes.items.len == 0) {
+                    try paths.append(expanded_partial_path.expanded);
+                } else {
+                    try queue.append(expanded_partial_path);
+                }
+            }
+
+            partial_path.expanded.deinit();
+            partial_path.next_nodes.deinit();
+        }
+
+        return paths;
     }
 };
 
@@ -73,40 +171,8 @@ const Map = struct {
         }
     }
 
-    fn shortest_path(self: *const Map) !usize {
-        const Node = struct {
-            pos: libgrid.Position,
-            dir: libgrid.Direction,
-
-            pub fn eq(this: *const @This(), other: *const @This()) bool {
-                return this.dir == other.dir and this.pos.eq(&other.pos);
-            }
-        };
-
-        const NodeInfo = struct { dist: usize, prev: Node };
-
+    fn shortest_path_info(self: *const Map) !CompCtx {
         const allocator = self.grid.get_allocator();
-
-        const CompCtx = struct {
-            info: std.AutoHashMap(Node, NodeInfo),
-
-            const MaxDist: usize = std.math.maxInt(usize);
-
-            pub fn compare(me: *const @This(), a: *const Node, b: *const Node) std.math.Order {
-                return std.math.order(me.distance(a), me.distance(b));
-            }
-
-            pub fn distance(me: *const @This(), item: *const Node) usize {
-                if (me.info.get(item.*)) |info| {
-                    return info.dist;
-                }
-                return @This().MaxDist;
-            }
-
-            pub fn put(me: *@This(), item: Node, dist: usize, prev: Node) !void {
-                try me.info.put(item, .{ .dist = dist, .prev = prev });
-            }
-        };
 
         var comp_ctx = CompCtx{ .info = std.AutoHashMap(Node, NodeInfo).init(allocator) };
 
@@ -141,57 +207,47 @@ const Map = struct {
                         _ = sorted.remove(remove_idx);
                     }
                     try sorted.add(node, &comp_ctx);
+                } else if (dist_via_me == neighbor_dist) {
+                    const info = comp_ctx.info.getPtr(node).?;
+                    if (!info.*.prev.eq(&curr)) {
+                        try info.*.other_prevs.put(curr, {});
+                    }
                 }
             }
         }
 
-        var best_end: ?Node = null;
-        var best_dist: usize = std.math.maxInt(usize);
+        return comp_ctx;
+    }
 
-        var iter = comp_ctx.info.iterator();
-
-        while (iter.next()) |entry| {
-            if (entry.key_ptr.pos.eq(&self.end)) {
-                std.log.info("{any}: {d}", .{ entry.key_ptr.*, entry.value_ptr.dist });
-                if (entry.value_ptr.dist < best_dist) {
-                    best_end = entry.key_ptr.*;
-                    best_dist = entry.value_ptr.dist;
-                }
-            }
-        }
-
+    pub fn printable_path(self: *const Map, path: []const Node) !libgrid.Grid([]const u8) {
         var sp_grid = try libgrid.Grid([]const u8).repeat(" ", self.grid.get_lines(), self.grid.cols, self.grid.get_allocator());
 
         var grid_iter = self.grid.iterator();
 
         while (grid_iter.next()) |item| {
+            // turn each tile into a drawable string, ignoring start
             sp_grid.get_mut(item.position).?.* = switch (item.value.*) {
                 .wall => "#",
                 .start => continue,
-                .end => "\x1b[1;33mE\x1b[0m",
+                .end => continue,
                 .empty => continue,
             };
         }
 
-        var curr = best_end orelse unreachable;
-
-        while (!curr.pos.eq(&self.start)) {
-            const prev = comp_ctx.info.get(curr).?.prev;
-            sp_grid.get_mut(prev.pos).?.* = switch (curr.dir) {
+        for (path) |curr| {
+            // add each node in the path as an arrow
+            sp_grid.get_mut(curr.pos).?.* = switch (curr.dir) {
                 .up => "\x1b[1;33m^\x1b[0m",
                 .down => "\x1b[1;33mv\x1b[0m",
                 .left => "\x1b[1;33m<\x1b[0m",
                 .right => "\x1b[1;33m>\x1b[0m",
             };
-            // std.log.info("prev of {d}, {d} is {d}, {d}", .{ curr.i, curr.j, prev.i, prev.j });
-            curr = prev;
         }
 
         sp_grid.get_mut(self.start).?.* = "\x1b[1;33mS\x1b[0m";
+        sp_grid.get_mut(self.end).?.* = "\x1b[1;33mE\x1b[0m";
 
-        std.log.info("shortest path: {s}", .{sp_grid.formatter(std.fmt.formatText)});
-
-        return best_dist;
+        return sp_grid;
     }
 
     pub fn format(self: *const Map, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
@@ -234,14 +290,22 @@ pub fn main() !void {
     const data = try buf_reader.reader().readAllAlloc(allocator, std.math.maxInt(usize));
 
     const map = try Map.parse(data, allocator);
+    std.debug.print("{c}", .{map});
+    const info = try map.shortest_path_info();
 
     switch (args.part) {
         .a => {
-            std.debug.print("{c}", .{map});
-            const dist = try map.shortest_path();
+            const dist = info.shortest_distance(map.end);
+            const all_shortests = try info.shortest_paths(map.end);
+            for (all_shortests.items) |path| {
+                const printable = try map.printable_path(path.items);
+                std.log.info("shortest path: {s}", .{printable.formatter(std.fmt.formatText)});
+            }
             std.log.info("{d}", .{dist});
         },
         .b => {
+            // const
+
             unreachable;
         },
     }
