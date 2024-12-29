@@ -293,20 +293,24 @@ pub fn main() !void {
     std.debug.print("{c}", .{map});
     const info = try map.shortest_path_info();
 
+    const dist = info.shortest_distance(map.end);
+    const all_shortests = try info.shortest_paths(map.end);
+
     switch (args.part) {
         .a => {
-            const dist = info.shortest_distance(map.end);
-            const all_shortests = try info.shortest_paths(map.end);
-            for (all_shortests.items) |path| {
-                const printable = try map.printable_path(path.items);
-                std.log.info("shortest path: {s}", .{printable.formatter(std.fmt.formatText)});
-            }
+            const printable = try map.printable_path(all_shortests.items[0].items);
+            std.log.info("shortest path: {s}", .{printable.formatter(std.fmt.formatText)});
             std.log.info("{d}", .{dist});
         },
         .b => {
-            // const
+            var positions = std.AutoHashMap(libgrid.Position, void).init(allocator);
+            for (all_shortests.items) |path| {
+                for (path.items) |node| {
+                    try positions.put(node.pos, {});
+                }
+            }
 
-            unreachable;
+            std.log.info("{d}", .{positions.count()});
         },
     }
 }
