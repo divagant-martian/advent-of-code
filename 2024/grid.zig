@@ -4,6 +4,14 @@ pub const Position = struct {
     i: usize,
     j: usize,
 
+    pub fn x(self: *const Position) usize {
+        return self.j;
+    }
+
+    pub fn y(self: *const Position) usize {
+        return self.i;
+    }
+
     pub fn move(self: *const Position, dir: Direction) ?Position {
         const delta_i, const delta_j = dir.as_deltas();
         const i = pos_with_offset(self.i, delta_i) orelse return null;
@@ -36,6 +44,25 @@ pub const Position = struct {
 
     pub fn eq(self: *const Position, other: *const Position) bool {
         return (self.i == other.i) and (self.j == other.j);
+    }
+
+    pub fn format(self: *const Position, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        var first = self.i;
+        var second = self.j;
+        var first_name: u8 = 'i';
+        var second_name: u8 = 'j';
+        if (std.mem.eql(u8, fmt, "xy")) {
+            first = self.j;
+            first_name = 'x';
+            second = self.i;
+            second_name = 'y';
+        }
+
+        try std.fmt.format(writer, "Pos{{{c}:", .{first_name});
+        try std.fmt.formatIntValue(first, "d", options, writer);
+        try std.fmt.format(writer, ", {c}:", .{second_name});
+        try std.fmt.formatIntValue(second, "d", options, writer);
+        try writer.writeAll("}}");
     }
 };
 
