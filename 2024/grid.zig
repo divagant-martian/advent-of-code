@@ -46,8 +46,26 @@ pub const Position = struct {
         return (self.i == other.i) and (self.j == other.j);
     }
 
+    pub fn dist(self: *const Position, other: *const Position) usize {
+        var distance: usize = 0;
+
+        if (self.i > other.i) {
+            distance += self.i - other.i;
+        } else {
+            distance += other.i - self.i;
+        }
+
+        if (self.j > other.j) {
+            distance += self.j - other.j;
+        } else {
+            distance += other.j - self.j;
+        }
+
+        return distance;
+    }
+
     pub fn format(self: *const Position, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
-        var first = self.i;
+        var first = self.j;
         var second = self.j;
         var first_name: u8 = 'i';
         var second_name: u8 = 'j';
@@ -62,7 +80,7 @@ pub const Position = struct {
         try std.fmt.formatIntValue(first, "d", options, writer);
         try std.fmt.format(writer, ", {c}:", .{second_name});
         try std.fmt.formatIntValue(second, "d", options, writer);
-        try writer.writeAll("}}");
+        try writer.writeAll("}");
     }
 };
 
@@ -207,15 +225,14 @@ pub fn Grid(comptime T: type) type {
             return self.items().len / self.cols;
         }
 
+        pub const NeighborEntry = struct { pos: Position, item: T };
+
         pub const NeighborIter = struct {
             gridy: *const Self,
             pos: Position,
             curr_dir: ?Direction,
 
-            pub fn next(self: *NeighborIter) ?struct {
-                pos: Position,
-                item: T,
-            } {
+            pub fn next(self: *NeighborIter) ?NeighborEntry {
                 var dir = self.curr_dir orelse return null;
 
                 while (true) {
@@ -244,10 +261,14 @@ pub fn Grid(comptime T: type) type {
             }
         };
 
-        fn get_with_offset(self: *const Self, i: usize, j: usize, delta_i: i8, delta_j: i8) ?T {
-            const new_i = pos_with_offset(i, delta_i) orelse return null;
-            const new_j = pos_with_offset(j, delta_j) orelse return null;
-            return self.get(new_i, new_j);
+        pub fn get_with_offset(self: *const Self, pos: Position, diff: struct { di: isize, dj: isize }) ?NeighborEntry {
+            const i = pos_with_offset(pos.i, diff.di) orelse return null;
+            const j = pos_with_offset(pos.j, diff.dj) orelse return null;
+            const new_pos = Position{ .i = i, .j = j };
+            if (self.get(new_pos)) |item| {
+                return .{ .pos = new_pos, .item = item };
+            }
+            return null;
         }
 
         pub fn formatter(self: *const Self, T_format: *const fn (T, comptime []const u8, std.fmt.FormatOptions, anytype) anyerror!void) gen_fmt(T, T_format) {
@@ -304,11 +325,11 @@ pub fn Grid(comptime T: type) type {
     };
 }
 
-fn pos_with_offset(i: usize, delta_i: i2) ?usize {
+fn pos_with_offset(i: usize, delta_i: isize) ?usize {
     if (delta_i == 0) {
         return i;
     } else if (delta_i < 0) {
-        return std.math.sub(usize, i, @as(usize, @intCast(@as(i8, -1) * delta_i))) catch null;
+        return std.math.sub(usize, i, @as(usize, @intCast(@as(isize, -1) * delta_i))) catch null;
     } else {
         return std.math.add(usize, i, @intCast(delta_i)) catch null;
     }
