@@ -1,13 +1,13 @@
 use colored::Colorize;
 use intcode::get_data_from_path;
-use intcode::program::{Int, ProgReceiver, ProgSender, Program};
+use intcode::program::{Int, Program};
 use std::io;
 use std::sync::mpsc::channel;
 use std::thread;
 use std::time::Duration;
 
 fn main() {
-    let mut data = get_data_from_path("data/input.txt");
+    let data = get_data_from_path("data/input.txt");
     let (in_s, in_r) = channel();
     let (out_s, out_r) = channel();
     thread::spawn(move || loop {
