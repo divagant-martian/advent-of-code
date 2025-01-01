@@ -318,9 +318,8 @@ fn main() {
     let (output_sender, output_receiver) = channel();
     let mut explorer = Explorer::new(stdin.lock(), stdout.lock(), input_sender, output_receiver);
 
-    let data = get_data_from_path(
-        "/home/freyja/Documents/opensource/adventofcode/repair_droid/data/input.txt",
-    );
+    let data =
+        get_data_from_path("/home/divagant-martian/Workspace/advent-of-code/2019/repair_droid/data/input.txt");
     thread::spawn(move || {
         let mut program = Program::new(&data, input_receiver, output_sender);
         program.run();
