@@ -45,6 +45,31 @@ const Language = struct {
         const distances = try self.accept_info(str);
         return distances.contains(str.len);
     }
+
+    fn count_accepts(self: *const Language, str: Str) !usize {
+        var distances = try self.accept_info(str);
+        if (!distances.contains(str.len)) {
+            return 0;
+        }
+        var acc_counts = try self.alphabet.allocator.alloc(usize, str.len + 1);
+        defer self.alphabet.allocator.free(acc_counts);
+        acc_counts[0] = 1;
+        defer distances.deinit();
+
+        for (1..str.len + 1) |dist| {
+            if (distances.get(dist)) |letter_set| {
+                var letters = letter_set.keyIterator();
+                var sum: usize = 0;
+                while (letters.next()) |letter| {
+                    const query = dist - letter.len;
+                    sum += acc_counts[query];
+                }
+                acc_counts[dist] = sum;
+            }
+        }
+
+        return acc_counts[str.len];
+    }
 };
 
 const _ = error{ missingAlphabet, missingStrings };
@@ -79,7 +104,7 @@ pub fn main() !void {
     }
 
     const lang = Language{ .alphabet = alphabet };
-    std.log.debug("alphabet is {s}", .{lang.alphabet.items});
+    // std.log.debug("alphabet is {s}", .{lang.alphabet.items});
 
     switch (args.part) {
         .a => {
@@ -96,7 +121,12 @@ pub fn main() !void {
             std.log.info("accepted strings: {d}", .{accepts});
         },
         .b => {
-            unreachable;
+            var count: usize = 0;
+            for (strings.items) |str| {
+                count += try lang.count_accepts(str);
+                std.debug.print("count {d}\n", .{count});
+            }
+            std.log.info("all options: {d}", .{count});
         },
     }
 }
