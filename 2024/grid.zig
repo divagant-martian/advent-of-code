@@ -1,5 +1,14 @@
 const std = @import("std");
 
+pub const Delta = struct {
+    i: isize,
+    j: isize,
+
+    pub fn norm(self: *const Delta) usize {
+        return @intCast(@abs(self.i) + @abs(self.j));
+    }
+};
+
 pub const Position = struct {
     i: usize,
     j: usize,
@@ -64,8 +73,14 @@ pub const Position = struct {
         return distance;
     }
 
+    pub fn sub(self: *const Position, other: *const Position) Delta {
+        const i = @as(isize, @intCast(self.i)) - @as(isize, @intCast(other.i));
+        const j = @as(isize, @intCast(self.j)) - @as(isize, @intCast(other.j));
+        return .{ .i = i, .j = j };
+    }
+
     pub fn format(self: *const Position, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
-        var first = self.j;
+        var first = self.i;
         var second = self.j;
         var first_name: u8 = 'i';
         var second_name: u8 = 'j';
