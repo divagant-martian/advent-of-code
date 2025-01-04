@@ -4,11 +4,19 @@ pub fn build(b: *std.Build) void {
     const exe = b.addExecutable(.{ .name = "main", .root_source_file = b.path("./main.zig"), .target = b.standardTargetOptions(.{}), .optimize = b.standardOptimizeOption(.{}) });
     const grid = b.addModule("grid", .{ .root_source_file = b.path("../grid.zig") });
     const args = b.addModule("args", .{ .root_source_file = b.path("../args.zig") });
-    const sorted_array = b.addModule("sorted_array", .{ .root_source_file = b.path("./sorted_array.zig") });
+    const num_key = b.addModule("num_key", .{ .root_source_file = b.path("./num_key.zig") });
+    const dir_key = b.addModule("dir_key", .{ .root_source_file = b.path("./dir_key.zig") });
+
+    num_key.addImport("grid", grid);
+    num_key.addImport("dir_key", dir_key);
+
+    dir_key.addImport("grid", grid);
+    dir_key.addImport("num_key", num_key);
 
     exe.root_module.addImport("grid", grid);
     exe.root_module.addImport("args", args);
-    exe.root_module.addImport("sorted_array", sorted_array);
+    exe.root_module.addImport("num_key", num_key);
+    exe.root_module.addImport("dir_key", dir_key);
 
     b.installArtifact(exe);
 
@@ -25,7 +33,8 @@ pub fn build(b: *std.Build) void {
     const unit_tests = b.addTest(.{ .root_source_file = b.path("./main.zig"), .target = b.resolveTargetQuery(.{}) });
     unit_tests.root_module.addImport("grid", grid);
     unit_tests.root_module.addImport("args", args);
-    unit_tests.root_module.addImport("sorted_array", sorted_array);
+    unit_tests.root_module.addImport("num_key", num_key);
+    unit_tests.root_module.addImport("dir_key", dir_key);
     const run_unit_tests = b.addRunArtifact(unit_tests);
     test_step.dependOn(&run_unit_tests.step);
 }
