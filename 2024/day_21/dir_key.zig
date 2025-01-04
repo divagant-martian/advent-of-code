@@ -158,53 +158,12 @@ pub const DirStr = struct {
         return from_key(DirKey, from, to, allocator);
     }
 
+    // adds enter at the beginig and end
     pub fn with_enter(self: *const DirStr) !DirStr {
-        const new_ptr = try self.allocator.alloc(DirKey, self.dir_keys.len + 1);
-        std.mem.copyForwards(DirKey, new_ptr, self.dir_keys);
-        new_ptr[self.dir_keys.len] = .enter;
+        const new_ptr = try self.allocator.alloc(DirKey, self.dir_keys.len + 2);
+        new_ptr[0] = .enter;
+        std.mem.copyForwards(DirKey, new_ptr[1..], self.dir_keys);
+        new_ptr[self.dir_keys.len + 1] = .enter;
         return DirStr{ .dir_keys = new_ptr, .allocator = self.allocator };
     }
 };
-
-// test "029A numkey to dirkey" {
-//     const allocator = std.testing.allocator;
-//
-//     const numstring = try numkey.NumStr.parse("A029A", allocator);
-//     defer numstring.deinit();
-//
-//     const expected_dirstring = try DirStr.parse("<A^A^^>AvvvA", allocator);
-//     defer expected_dirstring.deinit();
-//
-//     const dirstring = try DirStr.from_num_str(&numstring);
-//     defer dirstring.deinit();
-//
-//     try std.testing.expectEqualSlices(DirKey, expected_dirstring.dir_keys, dirstring.dir_keys);
-// }
-
-// test "029A dirkey to dirkey" {
-//     const dirstring = [_]DirKey{ .enter, .left, .enter, .up, .enter, .up, .up, .right, .enter, .down, .down, .down, .enter };
-//     const expected_dirdirstring = [_]DirKey{ .down, .left, .left, .enter, .up, .right, .right, .enter, .left, .enter, .right, .enter, .left, .enter, .enter, .down, .right, .enter, .up, .enter, .down, .left, .enter, .enter, .enter, .up, .right, .enter };
-//
-//     const dirdirstring = try dirstring_to_dirstring(&dirstring, std.testing.allocator);
-//     defer dirdirstring.deinit();
-//
-//     std.debug.print("yourmom\n", .{});
-//     std.debug.print("expected: {any}\n", .{expected_dirdirstring});
-//     std.debug.print("found:    {any}\n", .{dirdirstring.items});
-//     try std.testing.expectEqualSlices(DirKey, &expected_dirdirstring, dirdirstring.items);
-// }
-//
-// test "<vA dirkey to dirkey pt 2" {
-//     const dirstring = [_]DirKey{ .enter, .left, .down, .enter };
-//     var dirdirstring = try dirstring_to_dirstring(&dirstring, std.testing.allocator);
-//     defer dirdirstring.deinit();
-//     try dirdirstring.insert(0, .enter);
-//     const dirdirdirstring = try dirstring_to_dirstring(dirdirstring.items, std.testing.allocator);
-//     defer dirdirdirstring.deinit();
-//
-//     std.debug.print("yourgreatmom\n", .{});
-//     std.debug.print("nonce:   {any}\n", .{dirstring});
-//     std.debug.print("once:    {any}\n", .{dirdirstring.items});
-//     std.debug.print("twice:   {any}\n", .{dirdirdirstring.items});
-//     @panic("fuck...");
-// }

@@ -18,6 +18,12 @@ const Permutator = struct {
         var a: []dirkey.DirKey = self.visited.dir_keys;
 
         const yield = try self.visited.with_enter();
+
+        if (a.len < 2) {
+            self.still_going = null;
+            return yield;
+        }
+
         var j = a.len - 2;
 
         while (a[j].ge(a[j + 1])) : (j -= 1) {
@@ -84,58 +90,45 @@ const CPad = struct {
     }
 };
 
+const Generator = struct {
+    from: numkey.NumKey = .a,
+    to: numkey.NumKey = .a,
+    c_parts_generators: bool = false,
+
+    fn dostuff(from: numkey.NumKey, to: numkey.NumKey, allocator: std.mem.Allocator) !void {
+        // translate 1
+        const a_trad = try dirkey.DirStr.from_num_keys(from, to, allocator);
+        var a_perms = Permutator{ .visited = a_trad };
+        // permutate 1
+        while (try a_perms.next()) |a_perm| {
+            var a_pairs = std.mem.window(dirkey.DirKey, a_perm.dir_keys, 2, 1);
+            // windows 1
+            while (a_pairs.next()) |a_pair| {
+                // translate 2
+                const b_trad = try dirkey.DirStr.from_dir_keys(a_pair[0], a_pair[1], allocator);
+                var b_perms = Permutator{ .visited = b_trad };
+                // permutate 2
+                while (try b_perms.next()) |b_perm| {
+                    var b_pairs = std.mem.window(dirkey.DirKey, b_perm.dir_keys, 2, 1);
+                    // windows 2
+                    while (b_pairs.next()) |b_pair| {
+                        // translate 3 (final)
+                        const c_trad = try dirkey.DirStr.from_dir_keys(b_pair[0], b_pair[1], allocator);
+                        // permutate 3 (final)
+                        var c_perms = Permutator{ .visited = c_trad };
+                        while (try c_perms.next()) |c_perm| {
+                            std.debug.print("({c}) A:{c}  B:{c}  C:{c}\n", .{ a_perm, a_pair, b_pair, c_perm });
+                        }
+                    }
+                }
+            }
+        }
+    }
+};
+
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
-    // var args_iter = try std.process.argsWithAllocator(allocator);
-    // defer args_iter.deinit();
-
-    // const args = try Args.from_args_iter(&args_iter);
-
-    // var file = try std.fs.cwd().openFile(args.file_name, .{});
-    // defer file.close();
-
-    // var buf_reader = std.io.bufferedReader(file.reader());
-    // const data = try buf_reader.reader().readAllAlloc(allocator, std.math.maxInt(usize));
-
-    // var lines = std.mem.tokenizeScalar(u8, data, '\n');
-
-    // while (lines.next()) |line| {
-    // var numstring = try numkey.NumStr.parse(line, allocator);
-    //
-    //     std.debug.print("numstring: {}", .{numstring});
-    //
-    //     var dirstring0 = try numstring_to_dirstring(numstring.items, allocator);
-    //     try dirstring0.insert(0, .enter);
-    //
-    //     std.debug.print("dirstring0: ", .{});
-    //     print_dirstring(dirstring0.items);
-    //
-    //     var dirstring1 = try dirstring_to_dirstring(dirstring0.items, allocator);
-    //     try dirstring1.insert(0, .enter);
-    //
-    //     std.debug.print("dirstring1: ", .{});
-    //     print_dirstring(dirstring1.items);
-    //
-    //     const dirstring2 = try dirstring_to_dirstring(dirstring1.items, allocator);
-    //
-    //     std.debug.print("dirstring2: ", .{});
-    //     print_dirstring(dirstring2.items);
-    //
-    //     std.debug.print("final len: {d}\n\n", .{dirstring2.items.len});
-    // }
-    // const start = try dirkey.DirStr.parse("^vv>", allocator);
-    // var permutator = Permutator{ .visited = start };
-    // while (try permutator.next()) |shuffled| {
-    // std.debug.print("{}\n", .{shuffled});
-    // }
-    //
-    const c_dir_str = try dirkey.DirStr.parse("<vA<AA>>^AvAA<^A>A<v<A>>^AvA^A<vA>^A<v<A>^A>AAvA^A<v<A>A>^AAAvA<^A>A", allocator);
-
-    var c_pad = CPad{};
-    const num_str = try c_pad.execute(&c_dir_str);
-    std.debug.print("{}\n", .{num_str});
-
-    std.debug.print("final state N:{}, A:{}, B:{}\n", .{ c_pad.n, c_pad.a, c_pad.b });
+    try Generator.dostuff(.a, .n0, allocator);
 }
