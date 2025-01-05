@@ -53,6 +53,34 @@ const CPad = struct {
     }
 };
 
+const FlatMap = struct {
+    perms: Permutator,
+    curr_prod: Product(Permutator),
+
+    fn new(dir_str: dirkey.DirStr) !FlatMap {
+        var perms = try Permutator.new(dir_str);
+        const curr_perm = (try perms.next()).?;
+        const curr_prod = try new_b_level(curr_perm);
+        return .{ .perms = perms, .curr_prod = curr_prod };
+    }
+
+    fn next(self: *FlatMap) !?dirkey.DirStr {
+        var maybe_yield = try self.curr_prod.next();
+        while (maybe_yield == null) {
+            const perm = try self.perms.next() orelse return null;
+            self.curr_prod = try new_b_level(perm);
+            maybe_yield = try self.curr_prod.next();
+        }
+        return maybe_yield;
+    }
+
+    fn reset(self: *FlatMap) !void {
+        try self.perms.reset();
+        const curr_perm = (try self.perms.next()).?;
+        self.curr_prod = try new_b_level(curr_perm);
+    }
+};
+
 fn new_b_level(b_str: dirkey.DirStr) !Product(Permutator) {
     const allocator = b_str.allocator;
 
@@ -88,16 +116,9 @@ const Generator = struct {
             while (a_pairs.next()) |a_pair| {
                 // translate 2
                 const b_trad = try dirkey.DirStr.from_dir_keys(a_pair[0], a_pair[1], allocator);
-                var b_perms = try Permutator.new(b_trad);
-                // permutate 2
-                while (try b_perms.next()) |b_perm| {
-                    var perm_prod = try new_b_level(b_perm);
-                    while (try perm_prod.next()) |combined| {
-                        std.debug.print("perprod: {}\n", .{combined});
-                    }
-                    // break;
-                    // std.debug.print("\n", .{});
-                    // std.debug.print("\n", .{});
+                var b_thing = try FlatMap.new(b_trad);
+                while (try b_thing.next()) |b_thingy| {
+                    std.debug.print("{}\n", .{b_thingy});
                 }
                 // break;
             }
