@@ -90,7 +90,7 @@ pub const NumStr = struct {
     num_keys: []const NumKey,
     allocator: std.mem.Allocator,
 
-    pub fn from_arraylist(list: *const std.ArrayList(NumKey)) NumStr {
+    pub fn from_arraylist(list: std.ArrayList(NumKey)) NumStr {
         return NumStr{ .num_keys = list.items, .allocator = list.allocator };
     }
 

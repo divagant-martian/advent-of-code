@@ -116,6 +116,10 @@ pub const DirStr = struct {
     dir_keys: []DirKey,
     allocator: std.mem.Allocator,
 
+    pub fn from_arraylist(list: std.ArrayList(DirKey)) DirStr {
+        return DirStr{ .dir_keys = list.items, .allocator = list.allocator };
+    }
+
     pub fn from_num_keys(from: numkey.NumKey, to: numkey.NumKey, allocator: std.mem.Allocator) !DirStr {
         return from_key(numkey.NumKey, from, to, allocator);
     }
@@ -165,5 +169,10 @@ pub const DirStr = struct {
         std.mem.copyForwards(DirKey, new_ptr[1..], self.dir_keys);
         new_ptr[self.dir_keys.len + 1] = .enter;
         return DirStr{ .dir_keys = new_ptr, .allocator = self.allocator };
+    }
+
+    pub fn clone(self: *const DirStr) !DirStr {
+        const dir_keys = try self.allocator.dupe(DirKey, self.dir_keys);
+        return DirStr{ .dir_keys = dir_keys, .allocator = self.allocator };
     }
 };

@@ -9,8 +9,21 @@ pub const std_options = .{
 };
 
 const Permutator = struct {
+    og: dirkey.DirStr,
     visited: dirkey.DirStr,
     still_going: ?void = {},
+
+    fn new(dis_str: dirkey.DirStr) !Permutator {
+        return Permutator{
+            .og = try dis_str.clone(),
+            .visited = dis_str,
+        };
+    }
+
+    fn reset(self: *Permutator) void {
+        std.mem.copyForwards(dirkey.DirKey, self.visited.dir_keys, self.og.dir_keys);
+        self.still_going = {};
+    }
 
     pub fn next(self: *Permutator) !?dirkey.DirStr {
         _ = self.still_going orelse return null;
@@ -59,11 +72,13 @@ const CPad = struct {
         errdefer num_str.deinit();
 
         for (dir_str.dir_keys) |key| {
+            std.debug.print("{}", .{key});
             const pressed_num = try self.press_once(key) orelse continue;
             try num_str.append(pressed_num);
+            break;
         }
 
-        return numkey.NumStr.from_arraylist(&num_str);
+        return numkey.NumStr.from_arraylist(num_str);
     }
 
     fn press_once(self: *CPad, key: dirkey.DirKey) !?numkey.NumKey {
@@ -90,15 +105,87 @@ const CPad = struct {
     }
 };
 
+const PermProduct = struct {
+    generators: std.ArrayList(Permutator),
+    currents: std.ArrayList(dirkey.DirStr),
+    advancing_permutator: usize,
+    still_going: ?void = {},
+
+    fn new_from_dir_str(dir_str: dirkey.DirStr) !PermProduct {
+        var pairs = std.mem.window(dirkey.DirKey, dir_str.dir_keys, 2, 1);
+        const allocator = dir_str.allocator;
+        // windows
+        var generators = std.ArrayList(Permutator).init(allocator);
+        errdefer generators.deinit();
+
+        while (pairs.next()) |b_pair| {
+            // translate
+            const c_trad = try dirkey.DirStr.from_dir_keys(b_pair[0], b_pair[1], allocator);
+            // permutate
+            const c_perms = try Permutator.new(c_trad);
+            try generators.append(c_perms);
+        }
+
+        return PermProduct.new(generators);
+    }
+
+    fn new(generators: std.ArrayList(Permutator)) !PermProduct {
+        var currents = try std.ArrayList(dirkey.DirStr).initCapacity(generators.allocator, generators.items.len);
+        for (generators.items) |*gen| {
+            std.debug.print("adding OG: {}\n", .{gen.og});
+            const perm = (try gen.next()).?;
+            currents.appendAssumeCapacity(perm);
+        }
+        const advancing_permutator = generators.items.len - 1;
+        return .{ .generators = generators, .currents = currents, .advancing_permutator = advancing_permutator };
+    }
+
+    fn join_currents(self: *const PermProduct) !dirkey.DirStr {
+        var joined = std.ArrayList(dirkey.DirKey).init(self.generators.allocator);
+        errdefer joined.deinit();
+        try joined.append(.enter);
+        for (self.currents.items) |dir_str| {
+            try joined.appendSlice(dir_str.dir_keys[1..]);
+        }
+
+        return dirkey.DirStr.from_arraylist(joined);
+    }
+
+    fn next(self: *PermProduct) !?dirkey.DirStr {
+        _ = self.still_going orelse return null;
+        const currents = try self.join_currents();
+        const maybe_new = try self.generators.items[self.advancing_permutator].next();
+
+        if (maybe_new) |new_perm| {
+            self.currents.items[self.advancing_permutator] = new_perm;
+        } else reset: {
+            if (self.advancing_permutator == 0) {
+                self.still_going = null;
+            } else {
+                for (self.advancing_permutator..self.generators.items.len) |j| {
+                    self.generators.items[j].reset();
+                }
+                self.advancing_permutator -= 1;
+                for (self.advancing_permutator..self.generators.items.len) |i| {
+                    self.currents.items[i] = (try self.generators.items[i].next()) orelse break :reset;
+                }
+            }
+        }
+
+        return currents;
+    }
+};
+
 const Generator = struct {
     from: numkey.NumKey = .a,
     to: numkey.NumKey = .a,
-    c_parts_generators: bool = false,
+    c_parts_generators: std.ArrayList(Permutator),
+    advancing: usize = 0,
 
-    fn dostuff(from: numkey.NumKey, to: numkey.NumKey, allocator: std.mem.Allocator) !void {
+    fn new(from: numkey.NumKey, to: numkey.NumKey, allocator: std.mem.Allocator) !Generator {
         // translate 1
         const a_trad = try dirkey.DirStr.from_num_keys(from, to, allocator);
-        var a_perms = Permutator{ .visited = a_trad };
+        var a_perms = try Permutator.new(a_trad);
         // permutate 1
         while (try a_perms.next()) |a_perm| {
             var a_pairs = std.mem.window(dirkey.DirKey, a_perm.dir_keys, 2, 1);
@@ -106,29 +193,41 @@ const Generator = struct {
             while (a_pairs.next()) |a_pair| {
                 // translate 2
                 const b_trad = try dirkey.DirStr.from_dir_keys(a_pair[0], a_pair[1], allocator);
-                var b_perms = Permutator{ .visited = b_trad };
+                var b_perms = try Permutator.new(b_trad);
                 // permutate 2
                 while (try b_perms.next()) |b_perm| {
-                    var b_pairs = std.mem.window(dirkey.DirKey, b_perm.dir_keys, 2, 1);
-                    // windows 2
-                    while (b_pairs.next()) |b_pair| {
-                        // translate 3 (final)
-                        const c_trad = try dirkey.DirStr.from_dir_keys(b_pair[0], b_pair[1], allocator);
-                        // permutate 3 (final)
-                        var c_perms = Permutator{ .visited = c_trad };
-                        while (try c_perms.next()) |c_perm| {
-                            std.debug.print("({c}) A:{c}  B:{c}  C:{c}\n", .{ a_perm, a_pair, b_pair, c_perm });
-                        }
+                    var perm_prod = try PermProduct.new_from_dir_str(b_perm);
+                    while (try perm_prod.next()) |combined| {
+                        std.debug.print("perprod: {}\n", .{combined});
                     }
+                    // break;
+                    // std.debug.print("\n", .{});
+                    // std.debug.print("\n", .{});
                 }
+                // break;
             }
+            std.debug.print("---\n", .{});
+            // break;
         }
+
+        return Generator{ .from = from, .to = to, .c_parts_generators = std.ArrayList(Permutator).init(allocator) };
     }
+
+    // fn next(self: *Generator) ?dirkey.DirStr {
+    // var joined = std.ArrayList(dirkey.DirKey).init(self.c_parts_generators.allocator);
+    // for (self.c_parts_generators.items) |gen| {
+    //
+    // }
+    // }
 };
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
-    try Generator.dostuff(.a, .n0, allocator);
+    _ = try Generator.new(.a, .n0, allocator);
+    var c_pad = CPad{};
+    const dirstr = try dirkey.DirStr.parse("<vA<AA>>^AvAA<^A>A<v<A>>^AvA^A<vA>^A<v<A>^A>AAvA^A<v<A>A>^AAAvA<^A>A", allocator);
+    const numstr = try c_pad.execute(&dirstr);
+    std.debug.print("\n got: {}", .{numstr});
 }
