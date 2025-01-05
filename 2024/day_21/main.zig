@@ -105,31 +105,30 @@ const CPad = struct {
     }
 };
 
-fn b_permutators(b_str: dirkey.DirStr) !std.ArrayList(Permutator) {
-    const allocator = b_str.allocator;
-
-    var generators = std.ArrayList(Permutator).init(allocator);
-    errdefer generators.deinit();
-
-    // windows
-    var pairs = std.mem.window(dirkey.DirKey, b_str.dir_keys, 2, 1);
-    while (pairs.next()) |b_pair| {
-        // translate
-        const c_trad = try dirkey.DirStr.from_dir_keys(b_pair[0], b_pair[1], allocator);
-        // permutate
-        const c_perms = try Permutator.new(c_trad);
-        try generators.append(c_perms);
-    }
-
-    return generators;
-}
-
 fn PermProduct(comptime GenT: type) type {
     return struct {
         generators: std.ArrayList(GenT),
         currents: std.ArrayList(dirkey.DirStr),
         advancing_permutator: usize,
         still_going: ?void = {},
+
+        fn new_b_level(b_str: dirkey.DirStr) !PermProduct(Permutator) {
+            const allocator = b_str.allocator;
+
+            var generators = std.ArrayList(Permutator).init(allocator);
+            errdefer generators.deinit();
+
+            // windows
+            var pairs = std.mem.window(dirkey.DirKey, b_str.dir_keys, 2, 1);
+            while (pairs.next()) |b_pair| {
+                // translate
+                const c_trad = try dirkey.DirStr.from_dir_keys(b_pair[0], b_pair[1], allocator);
+                // permutate
+                const c_perms = try Permutator.new(c_trad);
+                try generators.append(c_perms);
+            }
+            return PermProduct(Permutator).new_from_generators(generators);
+        }
 
         fn new_from_generators(generators: std.ArrayList(GenT)) !@This() {
             var currents = try std.ArrayList(dirkey.DirStr).initCapacity(generators.allocator, generators.items.len);
@@ -209,7 +208,7 @@ const Generator = struct {
                 var b_perms = try Permutator.new(b_trad);
                 // permutate 2
                 while (try b_perms.next()) |b_perm| {
-                    var perm_prod = try PermProduct(Permutator).new_from_generators(try b_permutators(b_perm));
+                    var perm_prod = try PermProduct(Permutator).new_b_level(b_perm);
                     while (try perm_prod.next()) |combined| {
                         std.debug.print("perprod: {}\n", .{combined});
                     }
