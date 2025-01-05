@@ -20,7 +20,7 @@ const Permutator = struct {
         };
     }
 
-    fn reset(self: *Permutator) void {
+    fn reset(self: *Permutator) !void {
         std.mem.copyForwards(dirkey.DirKey, self.visited.dir_keys, self.og.dir_keys);
         self.still_going = {};
     }
@@ -105,6 +105,25 @@ const CPad = struct {
     }
 };
 
+fn b_permutators(b_str: dirkey.DirStr) !std.ArrayList(Permutator) {
+    const allocator = b_str.allocator;
+
+    var generators = std.ArrayList(Permutator).init(allocator);
+    errdefer generators.deinit();
+
+    // windows
+    var pairs = std.mem.window(dirkey.DirKey, b_str.dir_keys, 2, 1);
+    while (pairs.next()) |b_pair| {
+        // translate
+        const c_trad = try dirkey.DirStr.from_dir_keys(b_pair[0], b_pair[1], allocator);
+        // permutate
+        const c_perms = try Permutator.new(c_trad);
+        try generators.append(c_perms);
+    }
+
+    return generators;
+}
+
 fn PermProduct(comptime GenT: type) type {
     return struct {
         generators: std.ArrayList(GenT),
@@ -112,33 +131,25 @@ fn PermProduct(comptime GenT: type) type {
         advancing_permutator: usize,
         still_going: ?void = {},
 
-        fn new_from_dir_str(dir_str: dirkey.DirStr) !@This() {
-            var pairs = std.mem.window(dirkey.DirKey, dir_str.dir_keys, 2, 1);
-            const allocator = dir_str.allocator;
-            // windows
-            var generators = std.ArrayList(Permutator).init(allocator);
-            errdefer generators.deinit();
-
-            while (pairs.next()) |b_pair| {
-                // translate
-                const c_trad = try dirkey.DirStr.from_dir_keys(b_pair[0], b_pair[1], allocator);
-                // permutate
-                const c_perms = try Permutator.new(c_trad);
-                try generators.append(c_perms);
-            }
-
-            return @This().new(generators);
-        }
-
-        fn new(generators: std.ArrayList(Permutator)) !@This() {
+        fn new_from_generators(generators: std.ArrayList(GenT)) !@This() {
             var currents = try std.ArrayList(dirkey.DirStr).initCapacity(generators.allocator, generators.items.len);
             for (generators.items) |*gen| {
-                std.debug.print("adding OG: {}\n", .{gen.og});
                 const perm = (try gen.next()).?;
                 currents.appendAssumeCapacity(perm);
             }
             const advancing_permutator = generators.items.len - 1;
             return .{ .generators = generators, .currents = currents, .advancing_permutator = advancing_permutator };
+        }
+
+        fn reset(self: *@This()) !void {
+            self.currents.clearRetainingCapacity();
+            for (self.generators.items) |*gen| {
+                try gen.reset();
+                const perm = (try gen.next()).?;
+                self.currents.appendAssumeCapacity(perm);
+            }
+            self.advancing_permutator = self.generators.items.len - 1;
+            self.still_going = {};
         }
 
         fn join_currents(self: *const @This()) !dirkey.DirStr {
@@ -164,7 +175,7 @@ fn PermProduct(comptime GenT: type) type {
                     self.still_going = null;
                 } else {
                     for (self.advancing_permutator..self.generators.items.len) |j| {
-                        self.generators.items[j].reset();
+                        try self.generators.items[j].reset();
                     }
                     self.advancing_permutator -= 1;
                     for (self.advancing_permutator..self.generators.items.len) |i| {
@@ -198,7 +209,7 @@ const Generator = struct {
                 var b_perms = try Permutator.new(b_trad);
                 // permutate 2
                 while (try b_perms.next()) |b_perm| {
-                    var perm_prod = try PermProduct(Permutator).new_from_dir_str(b_perm);
+                    var perm_prod = try PermProduct(Permutator).new_from_generators(try b_permutators(b_perm));
                     while (try perm_prod.next()) |combined| {
                         std.debug.print("perprod: {}\n", .{combined});
                     }
